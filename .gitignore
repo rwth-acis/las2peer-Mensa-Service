@@ -5,6 +5,7 @@
 /tmp/
 /log/
 /lib/
+/bin/
 /etc/ivy/ivy.jar
 /service/
 /out/
