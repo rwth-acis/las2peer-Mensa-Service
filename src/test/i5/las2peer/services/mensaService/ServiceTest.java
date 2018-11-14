@@ -89,33 +89,89 @@ public class ServiceTest {
 
 	/**
 	 * 
-	 * Test the example method that consumes one path parameter which we give the value "testInput" in this test.
+	 * Test to get menus for some available canteens.
 	 * 
 	 */
 	@Test
-	public void testPost() {
+	public void testGetMensaMenus() {
 		try {
 			MiniClient client = new MiniClient();
 			client.setConnectorEndpoint(connector.getHttpEndpoint());
 
 			client.setLogin(testAgent.getIdentifier(), testPass);
-			// Try to get the menu for the ahornstrasse mensa
-			ClientResponse result = getMensa(client, "ahornstrasse");
-			Assert.assertEquals(200, result.getHttpCode());
-			System.out.println("Result of 'ahornstrasse': " + result.getResponse().trim());
+			ClientResponse result;
+			// Try to get the menus
 
-			result = getMensa(client, "vita");
-			Assert.assertEquals(200, result.getHttpCode());
-			System.out.println("Result of 'vita': " + result.getResponse().trim());
+			String[] mensas = { "ahornstrasse", "vita", "templergraben", "academica" };
+			String[] languages = { "de-de", "en-US", "" };
+
+			for (String language : languages) {
+				for (String mensa : mensas) {
+					result = getMensa(client, mensa, language);
+					Assert.assertEquals(200, result.getHttpCode());
+					System.out.println("Result of '" + mensa + "': " + result.getResponse().trim());
+				}
+				// Mensa not supported:
+				result = getMensa(client, "mensaGibtEsNicht", language);
+				Assert.assertEquals(404, result.getHttpCode());
+				System.out.println("Result of 'mensaGibtEsNicht': " + result.getResponse().trim());
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.toString());
 		}
 	}
 
-	private ClientResponse getMensa(MiniClient client, String mensa) {
+	/**
+	 * 
+	 * Test to execute a command.
+	 * 
+	 */
+	@Test
+	public void testCommand() {
+		try {
+			MiniClient client = new MiniClient();
+			client.setConnectorEndpoint(connector.getHttpEndpoint());
+
+			client.setLogin(testAgent.getIdentifier(), testPass);
+			ClientResponse result;
+			// Try to get the menus
+
+			String[] mensas = { "ahornstrasse", "vita", "templergraben", "academica" };
+			String[] commands = { "/mensa" };
+
+			for (String command : commands) {
+				for (String mensa : mensas) {
+					result = postCommand(client, "de-de", command, mensa);
+					Assert.assertEquals(200, result.getHttpCode());
+					System.out.println("Result of '" + mensa + "': " + result.getResponse().trim());
+				}
+
+				result = postCommand(client, "de-de", command, "mensaGibtEsNicht");
+				Assert.assertEquals(200, result.getHttpCode());
+				System.out.println("Result of 'mensaGibtEsNicht': " + result.getResponse().trim());
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.toString());
+		}
+	}
+
+	private ClientResponse getMensa(MiniClient client, String mensa, String language) {
+		HashMap<String, String> header = new HashMap<String, String>();
+		header.put("accept-language", language);
 		return client.sendRequest("GET", mainPath + mensa, "", "text/plain", MediaType.TEXT_HTML + ";charset=utf-8",
-				new HashMap<String, String>());
+				header);
+	}
+
+	private ClientResponse postCommand(MiniClient client, String language, String command, String value) {
+		HashMap<String, String> header = new HashMap<String, String>();
+		header.put("accept-language", language);
+
+		String body = "command=" + command + "&text=" + value;
+		return client.sendRequest("POST", mainPath + "command", body, "application/x-www-form-urlencoded",
+				MediaType.TEXT_HTML + ";charset=utf-8", header);
 	}
 
 }
