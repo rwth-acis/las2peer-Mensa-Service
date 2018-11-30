@@ -81,8 +81,10 @@ public class MensaService extends RESTService {
 
 		// menus
 		String menu = mensaPage.substring(mensaPage.indexOf("table") - 1);
+		String extra = menu.substring(menu.indexOf("</table>"));
 		menu = menu.substring(0, menu.indexOf("</table>") + 8);
 		JSONObject mensaMenus = new JSONObject();
+		JSONObject mensaExtras = new JSONObject();
 		while (menu.indexOf("<tr") > 0) {
 			int menuTypeEnd = menu.indexOf("</span>");
 			String menuType = menu.substring(menu.indexOf("<span class=\"menue-item menue-category\">") + 40,
@@ -99,7 +101,29 @@ public class MensaService extends RESTService {
 			} else
 				menu = "";
 		}
-		return mensaMenus;
+		while (extra.indexOf("<tr") > 0) {
+			int menuTypeEnd = extra.indexOf("</span>");
+			String menuType = extra.substring(extra.indexOf("<span class=\"menue-item extra menue-category\">") + 46,
+					menuTypeEnd);
+			extra = extra.substring(menuTypeEnd + 1);
+
+			String menuName = extra.substring(extra.indexOf("</span>"), extra.indexOf("<div class=\"nutr-info"));
+			menuName = menuName.replaceAll("<sup>[\\sa-zA-Z0-9,]*</sup>", "");
+			menuName = menuName.replaceAll("<[^>]*>", " ").trim();
+
+			mensaExtras.appendField(menuType, menuName);
+
+			int trIndex = extra.indexOf("</tr>");
+			if (trIndex > 0) {
+				extra = extra.substring(trIndex + 1);
+			} else
+				extra = "";
+		}
+
+		JSONObject m = new JSONObject();
+		m.put("menus", mensaMenus);
+		m.put("extras", mensaExtras);
+		return m;
 	}
 
 	/**
@@ -131,33 +155,45 @@ public class MensaService extends RESTService {
 		}
 		try {
 			mensaMenu = getMensaMenu(language, mensa);
-			for (String key : mensaMenu.keySet()) {
+			JSONObject menus = (JSONObject) mensaMenu.get("menus");
+			JSONObject extras = (JSONObject) mensaMenu.get("extras");
+			for (String key : menus.keySet()) {
 				if (key.equals("Tellergericht")) {
-					returnString += "🍽 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🍽 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.equals("Vegetarisch")) {
-					returnString += "🥗 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🥗 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.equals("Klassiker")) {
-					returnString += "👨🏻‍🍳 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "👨🏻‍🍳 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.equals("Empfehlung des Tages")) {
-					returnString += "👌🏿👨🏿‍🍳 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "👌🏿👨🏿‍🍳 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.equals("Wok")) {
-					returnString += "🥘 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🥘 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.equals("Ofenkartoffel")) {
-					returnString += "🥔 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🥔 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.equals("Pasta")) {
-					returnString += "🍝 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🍝 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.contains("Pizza")) {
-					returnString += "🍕 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🍕 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.contains("Grill")) {
-					returnString += "🥩 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🥩 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.contains("Burger")) {
-					returnString += "🍔 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🍔 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.contains("Sandwich")) {
-					returnString += "🥪 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🥪 " + key + ": " + menus.getAsString(key) + "\n";
 				} else if (key.contains("Flammengrill")) {
-					returnString += "🔥 " + key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += "🔥 " + key + ": " + menus.getAsString(key) + "\n";
 				} else {
-					returnString += key + ": " + mensaMenu.getAsString(key) + "\n";
+					returnString += key + ": " + menus.getAsString(key) + "\n";
+				}
+			}
+			returnString += "___\n";
+			for (String key : extras.keySet()) {
+				if (key.equals("Hauptbeilagen")) {
+					returnString += "" + key + ": " + extras.getAsString(key) + "\n";
+				} else if (key.equals("Nebenbeilagen")) {
+					returnString += "" + key + ": " + extras.getAsString(key) + "\n";
+				} else {
+					returnString += key + ": " + extras.getAsString(key) + "\n";
 				}
 			}
 		} catch (IOException e) {
