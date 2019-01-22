@@ -44,7 +44,7 @@ import net.minidev.json.JSONObject;
 @SwaggerDefinition(
 		info = @Info(
 				title = "las2peer Mensa Service",
-				version = "1.0",
+				version = "1.0.0",
 				description = "A las2peer Mensa Service for the RWTH canteen.",
 				contact = @Contact(
 						name = "Alexander Tobias Neumann",
