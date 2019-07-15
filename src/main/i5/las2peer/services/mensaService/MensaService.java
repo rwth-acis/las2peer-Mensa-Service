@@ -78,7 +78,38 @@ public class MensaService extends RESTService {
         getResourceConfig().register(PrematchingRequestFilter.class);
     }
 
-    public JSONObject getMensaMenu(String language, String mensa) throws IOException {
+  public Map<String, String> getCustomMessageDescriptions() {
+    Map<String, String> descriptions = new HashMap<>();
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_1",
+        "# Menu Queried for Mensa\n" +
+            "## Format\n" +
+            "```json\n" +
+            "{ msg: \"<name of mensa>\"}\n" +
+            "```\n" +
+            "\n" +
+            "## Examples\n" +
+            "### Menu Requests by Mensa\n" +
+            "```sql\n" +
+            "SELECT JSON_EXTRACT(REMARKS,\"$.msg\") AS mensa, COUNT(*) FROM MESSAGE WHERE EVENT=\"SERVICE_CUSTOM_MESSAGE_1\" AND SOURCE_AGENT = '$SERVICE$' GROUP BY JSON_EXTRACT(REMARKS,\"$.msg\")\n" +
+            "```\n" +
+            "#### Visualization\n" +
+            "Bar chart or pie chart.\n");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_2", "Menu queried for language. Format: Language in lang-country format.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_3", "Ratings queried for dish. Format: Name of dish.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_4", "Rating added for dish. Format: Name of dish.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_5", "Rating deleted for dish. Format: Name of dish.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_6", "Pictures queried for dish. Format: Name of dish.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_7", "Picture added for dish. Format: Name of dish.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_8", "Picture deleted for dish. Name of dish.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_10", "Menu successfully retrieved. Format: Menu as JSON.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_20", "Menu queried for unsupported mensa. Format: Name of unsupported mensa.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_40", "Time in ms to get return the menu. Format: Time is ms.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_41", "Time in ms to get return the rating for a dish. Format: Time is ms.");
+    descriptions.put("SERVICE_CUSTOM_MESSAGE_42", "Time in ms to get return the pictures for a dish. Format: Time is ms.");
+    return descriptions;
+  }
+
+  public JSONObject getMensaMenu(String language, String mensa) throws IOException {
         String mensaURL = "https://www.studierendenwerk-aachen.de/speiseplaene/";
         switch (language) {
             case "de-de":
