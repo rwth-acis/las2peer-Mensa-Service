@@ -13,6 +13,7 @@
         <dependency org="i5" name="las2peer-bundle" rev="${core.version}" changing="true" conf="platform->*" />
         <!-- JUnit -->
         <dependency org="junit" name="junit" rev="4.12" conf="platform->*" />
+        <dependency org="org.skyscreamer" name="jsonassert" rev="1.5.0" conf="platform->*" />
 		<dependency org="org.jacoco" name="org.jacoco.ant" rev="0.8.2" conf="platform->default" />
 
         <!-- service dependencies -->
