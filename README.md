@@ -1,8 +1,16 @@
-![las2peer](https://rwth-acis.github.io/las2peer/logo/vector/las2peer-logo.svg)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/rwth-acis/las2peer/master/img/logo/bitmap/las2peer-logo-128x128.png" />
+</p>
+<h1 align="center">las2peer-Mensa-Service</h1>
+<p align="center">
+  <a href="https://travis-ci.org/rwth-acis/las2peer-Mensa-Service" alt="Travis Build Status">
+        <img src="https://travis-ci.org/rwth-acis/las2peer-Mensa-Service.svg?branch=master" /></a>
+  <a href="https://codecov.io/gh/rwth-acis/las2peer-Mensa-Service" alt="Code Coverage">
+        <img src="https://codecov.io/gh/rwth-acis/las2peer-Mensa-Service/branch/master/graph/badge.svg" /></a>
+  <a href="https://libraries.io/github/rwth-acis/las2peer-contact-service" alt="Dependencies">
+        <img src="https://img.shields.io/librariesio/github/rwth-acis/las2peer-Mensa-Service" /></a>
+</p>
 
-# las2peer-Mensa-Service
-
-[![Build Status](https://travis-ci.org/rwth-acis/las2peer-Mensa-Service.svg?branch=master)](https://travis-ci.org/rwth-acis/las2peer-Mensa-Service) [![codecov](https://codecov.io/gh/rwth-acis/las2peer-Mensa-Service/branch/master/graph/badge.svg)](https://codecov.io/gh/rwth-acis/las2peer-Mensa-Service)
 
 A simple RESTful service for retrieving the current menu of a canteen of the RWTH Aachen University. The service is based on [las2peer](https://github.com/rwth-acis/LAS2peer). 
 
