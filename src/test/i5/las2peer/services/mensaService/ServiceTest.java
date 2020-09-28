@@ -57,7 +57,7 @@ public class ServiceTest {
 
 		// start service
 		// during testing, the specified service version does not matter
-		node.startService(new ServiceNameVersion(MensaService.class.getName(), "1.0.0"), "a pass");
+		node.startService(new ServiceNameVersion(MensaService.class.getName(), "1.0.2"), "a pass");
 
 		// start connector
 		connector = new WebConnector(true, 0, false, 0); // port 0 means use system defined port
