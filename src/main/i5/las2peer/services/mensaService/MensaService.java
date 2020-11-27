@@ -60,22 +60,12 @@ import net.minidev.json.JSONObject;
 /**
  * las2peer-Mensa-Service
  * <p>
- * A las2peer service that can display the current menu of a canteen of the RWTH.
+ * A las2peer service that can display the current menu of a canteen of the
+ * RWTH.
  */
 
 @Api
-@SwaggerDefinition(
-		info = @Info(
-				title = "las2peer Mensa Service",
-				version = "1.0.2",
-				description = "A las2peer Mensa Service for the RWTH canteen.",
-				contact = @Contact(
-						name = "Alexander Tobias Neumann",
-						url = "https://las2peer.org",
-						email = "neumann@dbis.rwth-aachen.de"),
-				license = @License(
-						name = "BSD-3",
-						url = "https://github.com/rwth-acis/las2peer-Mensa-Service/blob/master/LICENSE")))
+@SwaggerDefinition(info = @Info(title = "las2peer Mensa Service", version = "1.0.2", description = "A las2peer Mensa Service for the RWTH canteen.", contact = @Contact(name = "Alexander Tobias Neumann", url = "https://las2peer.org", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "BSD-3", url = "https://github.com/rwth-acis/las2peer-Mensa-Service/blob/master/LICENSE")))
 @ServicePath("/mensa")
 
 public class MensaService extends RESTService {
@@ -87,7 +77,8 @@ public class MensaService extends RESTService {
 	private final static String PICTURES_ENVELOPE_PREFIX = ENVELOPE_PREFIX + "pictures-";
 	private final static String DISH_INDEX_ENVELOPE_NAME = ENVELOPE_PREFIX + "dishes";
 	/**
-	 * Some dish names are not real dishes but status indicators like that the mensa counter is closed.
+	 * Some dish names are not real dishes but status indicators like that the mensa
+	 * counter is closed.
 	 */
 	private final static List<String> DISH_NAME_BLACKLIST = Arrays.asList("closed", "geschlossen");
 	private Date lastDishIndexUpdate;
@@ -133,20 +124,20 @@ public class MensaService extends RESTService {
 		return descriptions;
 	}
 
-	public JSONObject getMensaMenu(String language, String mensa) throws IOException {
-		String mensaURL = "https://www.studierendenwerk-aachen.de/speiseplaene/";
-		switch (language) {
-		case "de-de":
-			mensaURL += mensa + "-w.html";
-			break;
-		case "en-US":
-			mensaURL += mensa + "-w-en.html";
-			break;
-		default:
-			// German is the default language
-			mensaURL += mensa + "-w.html";
-			break;
-		}
+	public JSONObject getMensaMenu(String language, int mensaID) throws IOException {
+		String mensaURL = "https://openmensa.org/api/v2/";
+		// switch (language) {
+		// case "de-de":
+		// mensaURL += mensa + "-w.html";
+		// break;
+		// case "en-US":
+		// mensaURL += mensa + "-w-en.html";
+		// break;
+		// default:
+		// // German is the default language
+		// mensaURL += mensa + "-w.html";
+		// break;
+		// }
 		URL url = new URL(mensaURL);
 		URLConnection con = url.openConnection();
 		InputStream in = con.getInputStream();
@@ -214,29 +205,35 @@ public class MensaService extends RESTService {
 		return m;
 	}
 
+	public int getMensaId(String mensaName) {
+		switch (mensaName) {
+			case "vita":
+				return 96;
+
+			default:
+				return 187;
+			// academica
+
+		}
+	}
+
 	/**
 	 * This method returns the current menu of a canteen.
 	 *
-	 * @param mensa A canteen of the RWTH.
+	 * @param mensa    A canteen of the RWTH.
 	 * @param language The user's language.
 	 * @return Returns a String containing the menu.
 	 */
 	@GET
 	@Path("/{mensa}")
-	@ApiOperation(
-			value = "Get the menu of a mensa",
-			notes = "The mensa must be supported with the Studierendenwerk")
-	@ApiResponses(
-			value = { @ApiResponse(
-					code = HttpURLConnection.HTTP_OK,
-					message = "Menu received"),
-					@ApiResponse(
-							code = HttpURLConnection.HTTP_NOT_FOUND,
-							message = "Mensa not supported") })
+	@ApiOperation(value = "Get the menu of a mensa", notes = "The mensa must be supported with the Studierendenwerk")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Menu received"),
+			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Mensa not supported") })
 	public Response getMensa(@PathParam("mensa") String mensa,
 			@HeaderParam("accept-language") @DefaultValue("de-de") String language,
 			@QueryParam("format") @DefaultValue("html") String format) {
 		final long responseStart = System.currentTimeMillis();
+		int mensaID;
 		JSONObject mensaMenu;
 		String returnString;
 		if (!isMensaSupported(mensa)) {
@@ -246,7 +243,8 @@ public class MensaService extends RESTService {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1, mensa);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_2, language);
 		try {
-			mensaMenu = getMensaMenu(language, mensa);
+			mensaID = getMensaId(mensa);
+			mensaMenu = getMensaMenu(language, mensaID);
 			if ("html".equals(format)) {
 				returnString = convertToHtml(mensaMenu);
 			} else {
@@ -258,11 +256,11 @@ public class MensaService extends RESTService {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, mensaMenu.toString());
 		String responseContentType;
 		switch (format) {
-		case "html":
-			responseContentType = MediaType.TEXT_HTML + ";charset=utf-8";
-			break;
-		default:
-			responseContentType = MediaType.APPLICATION_JSON;
+			case "html":
+				responseContentType = MediaType.TEXT_HTML + ";charset=utf-8";
+				break;
+			default:
+				responseContentType = MediaType.APPLICATION_JSON;
 		}
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
 				String.valueOf(System.currentTimeMillis() - responseStart));
@@ -328,13 +326,8 @@ public class MensaService extends RESTService {
 	@Path("/command")
 	@Produces(MediaType.TEXT_HTML + ";charset=utf-8")
 	@Consumes("application/x-www-form-urlencoded")
-	@ApiResponses(
-			value = { @ApiResponse(
-					code = HttpURLConnection.HTTP_OK,
-					message = "Command executed.") })
-	@ApiOperation(
-			value = "Perform a command",
-			notes = "")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Command executed.") })
+	@ApiOperation(value = "Perform a command", notes = "")
 	public Response postTemplate(MultivaluedMap<String, String> form) {
 		String cmd = form.getFirst("command");
 		String text = form.getFirst("text");
@@ -602,7 +595,8 @@ public class MensaService extends RESTService {
 	}
 
 	void updateDishes() {
-		// if the new dishes have not been persisted within the last six hours we do so now
+		// if the new dishes have not been persisted within the last six hours we do so
+		// now
 		if (lastDishIndexUpdate == null
 				|| Math.abs(lastDishIndexUpdate.getTime() - new Date().getTime()) > SIX_HOURS_IN_MS) {
 			Date previousLastDishIndexUpdate = this.lastDishIndexUpdate;
@@ -624,12 +618,14 @@ public class MensaService extends RESTService {
 	 */
 	private void saveDishesToIndex() throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
 		System.out.println("Saving dishes to index...");
+		int mensaID;
 		Envelope envelope = this.getOrCreateDishIndexEnvelope();
 		HashSet<String> dishes = (HashSet<String>) envelope.getContent();
 		for (String mensa : SUPPORTED_MENSAS) {
 			JSONObject menu;
 			try {
-				menu = this.getMensaMenu("en-US", mensa);
+				mensaID = getMensaId(mensa);
+				menu = this.getMensaMenu("en-US", mensaID);
 			} catch (IOException e) {
 				menu = new JSONObject();
 				menu.put("menus", new JSONObject());
