@@ -40,7 +40,8 @@ public class ServiceTest {
 	/**
 	 * Called before a test starts.
 	 * <p>
-	 * Sets up the node, initializes connector and adds user agent that can be used throughout the test.
+	 * Sets up the node, initializes connector and adds user agent that can be used
+	 * throughout the test.
 	 *
 	 * @throws Exception
 	 */
@@ -67,7 +68,8 @@ public class ServiceTest {
 	}
 
 	/**
-	 * Called after the test has finished. Shuts down the server and prints out the connector log file for reference.
+	 * Called after the test has finished. Shuts down the server and prints out the
+	 * connector log file for reference.
 	 *
 	 * @throws Exception
 	 */
