@@ -134,10 +134,11 @@ public class MensaService extends RESTService {
 		mensaURL += mensaID + "/days/" + day + "/meals";
 
 		URL url = new URL(mensaURL);
-		// URLConnection con = url.openConnection();
+		URLConnection con = url.openConnection();
+		con.addRequestProperty("Content-type", "");
 		// JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 
-		return (JSONArray) url.getContent();
+		return (JSONArray) con.getContent();
 
 		// InputStream in = con.getInputStream();
 		// String charset = "UTF-8"; // Assumption
