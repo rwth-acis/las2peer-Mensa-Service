@@ -57,8 +57,8 @@ import io.swagger.annotations.License;
 import io.swagger.annotations.SwaggerDefinition;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
-// import net.minidev.json.parser.JSONParser;
-// import net.minidev.json.parser.ParseException;
+import net.minidev.json.parser.JSONParser;
+import net.minidev.json.parser.ParseException;
 
 /**
  * las2peer-Mensa-Service
@@ -74,7 +74,7 @@ import net.minidev.json.JSONObject;
 public class MensaService extends RESTService {
 
 	private final static long SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000L;
-	private final static List<String> SUPPORTED_MENSAS = Arrays.asList("vita", "academica");
+	private final static List<String> SUPPORTED_MENSAS = Arrays.asList("vita", "academica", "ahornstrasse");
 	private final static String ENVELOPE_PREFIX = "mensa-";
 	private final static String RATINGS_ENVELOPE_PREFIX = ENVELOPE_PREFIX + "ratings-";
 	private final static String PICTURES_ENVELOPE_PREFIX = ENVELOPE_PREFIX + "pictures-";
@@ -131,88 +131,31 @@ public class MensaService extends RESTService {
 		String mensaURL = "https://openmensa.org/api/v2/canteens/";
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String day = dateFormat.format(new Date());
+		JSONArray menu = new JSONArray();
 		mensaURL += mensaID + "/days/" + day + "/meals";
 
 		URL url = new URL(mensaURL);
 		URLConnection con = url.openConnection();
-		con.addRequestProperty("Content-type", "");
-		// JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+		con.addRequestProperty("Content-type", "application/json");
 
-		return (JSONArray) con.getContent();
+		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+		try {
+			menu = (JSONArray) jsonParser.parse(con.getInputStream());
+		} catch (ParseException e) {
+			e.printStackTrace();
 
-		// InputStream in = con.getInputStream();
-		// String charset = "UTF-8"; // Assumption
-		// String mensaPage = IOUtils.toString(in, charset);
-		// int activeHeadlineIndex = mensaPage.indexOf("active-headline");
-		// if (activeHeadlineIndex == -1) {
-		// // special case: weekend is now
-		// // get next monday
-		// activeHeadlineIndex = ordinalIndexOf(mensaPage, "default-headline", 5);
-		// }
-		// mensaPage = mensaPage.substring(activeHeadlineIndex + 17);
-		// int nextDaySectionIndex = mensaPage.indexOf("default-headline") - 11;
-		// mensaPage = mensaPage.substring(0, nextDaySectionIndex);
+		}
+		System.out.println(menu);
+		return menu;
 
-		// // menus
-		// String menu = mensaPage.substring(mensaPage.indexOf("table") - 1);
-		// String extra = menu.substring(menu.indexOf("</table>"));
-		// menu = menu.substring(0, menu.indexOf("</table>") + 8);
-		// JSONArray mensaMenus = new JSONArray();
-		// JSONObject mensaExtras = new JSONObject();
-		// while (menu.indexOf("<tr") > 0) {
-		// int menuTypeEnd = menu.indexOf("</span>");
-		// String menuType = menu.substring(menu.indexOf("<span class=\"menue-item
-		// menue-category\">") + 40,
-		// menuTypeEnd);
-		// menu = menu.substring(menuTypeEnd + 1);
-
-		// String menuName = menu.substring(menu.indexOf("</span>"), menu.indexOf("<div
-		// class=\"nutr-info"));
-		// menuName = menuName.replaceAll("<sup>[\\sa-zA-Z0-9,]*</sup>", "");
-		// menuName = menuName.replaceAll("<[^>]*>", "").trim();
-		// menuName = menuName.replaceAll("^\\|\\s+", "");
-		// JSONObject menuItem = new JSONObject();
-		// menuItem.put("type", menuType);
-		// menuItem.put("value", menuName);
-		// mensaMenus.add(menuItem);
-		// int trIndex = menu.indexOf("</tr>");
-		// if (trIndex > 0) {
-		// menu = menu.substring(trIndex + 1);
-		// } else
-		// menu = "";
-		// }
-		// while (extra.indexOf("<tr") > 0) {
-		// int menuTypeEnd = extra.indexOf("</span>");
-		// String menuType = extra.substring(extra.indexOf("<span class=\"menue-item
-		// extra menue-category\">") + 46,
-		// menuTypeEnd);
-		// extra = extra.substring(menuTypeEnd + 1);
-
-		// String menuName = extra.substring(extra.indexOf("</span>"),
-		// extra.indexOf("<div class=\"nutr-info"));
-		// menuName = menuName.replaceAll("<sup>[\\sa-zA-Z0-9,]*</sup>", "");
-		// menuName = menuName.replaceAll("<[^>]*>", " ").trim();
-		// menuName = menuName.replaceAll("^\\|\\s+", "");
-
-		// mensaExtras.appendField(menuType, menuName);
-
-		// int trIndex = extra.indexOf("</tr>");
-		// if (trIndex > 0) {
-		// extra = extra.substring(trIndex + 1);
-		// } else
-		// extra = "";
-		// }
-
-		// m.put("menus", mensaMenus);
-		// m.put("extras", mensaExtras);
-		// return m;
 	}
 
 	public int getMensaId(String mensaName) {
 		switch (mensaName) {
 			case "vita":
 				return 96;
-
+			case "ahornstrasse":
+				return 95;
 			default:
 				return 187;
 			// academica
@@ -277,8 +220,8 @@ public class MensaService extends RESTService {
 
 		for (Object o : menus) {
 			JSONObject menuItem = (JSONObject) o;
-			String type = menuItem.getAsString("type");
-			String dish = menuItem.getAsString("value");
+			String type = menuItem.getAsString("category");
+			String dish = menuItem.getAsString("name");
 			if (type.equals("Tellergericht")) {
 				returnString += "🍽 " + type + ": " + dish + "\n";
 			} else if (type.equals("Vegetarisch")) {
