@@ -145,7 +145,7 @@ public class MensaService extends RESTService {
 			e.printStackTrace();
 
 		}
-		System.out.println(menu);
+
 		return menu;
 
 	}
