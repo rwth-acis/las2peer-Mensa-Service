@@ -128,6 +128,7 @@ public class MensaService extends RESTService {
 	}
 
 	public JSONArray getMensaMenu(String language, int mensaID) throws IOException {
+		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 		String mensaURL = "https://openmensa.org/api/v2/canteens/";
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String day = dateFormat.format(new Date());
@@ -138,16 +139,12 @@ public class MensaService extends RESTService {
 		URLConnection con = url.openConnection();
 		con.addRequestProperty("Content-type", "application/json");
 
-		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 		try {
 			menu = (JSONArray) jsonParser.parse(con.getInputStream());
 		} catch (ParseException e) {
 			e.printStackTrace();
-
 		}
-
 		return menu;
-
 	}
 
 	public int getMensaId(String mensaName) {
@@ -156,10 +153,10 @@ public class MensaService extends RESTService {
 				return 96;
 			case "ahornstrasse":
 				return 95;
-			default:
+			case "academica":
 				return 187;
-			// academica
-
+			default:
+				return -1;
 		}
 	}
 
@@ -182,6 +179,7 @@ public class MensaService extends RESTService {
 		int mensaID;
 		JSONArray mensaMenu;
 		String returnString;
+
 		if (!isMensaSupported(mensa)) {
 			Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_20, mensa);
 			return Response.status(Status.NOT_FOUND).entity("Mensa not supported!").build();
@@ -190,6 +188,9 @@ public class MensaService extends RESTService {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_2, language);
 		try {
 			mensaID = getMensaId(mensa);
+			if (mensaID == -1)
+				throw new IOException("Mensa Id not found");
+
 			mensaMenu = getMensaMenu(language, mensaID);
 			if ("html".equals(format)) {
 				returnString = convertToHtml(mensaMenu);
@@ -251,15 +252,6 @@ public class MensaService extends RESTService {
 			}
 		}
 		returnString += "___\n";
-		// for (String key : extras.keySet()) {
-		// if (key.equals("Hauptbeilagen")) {
-		// returnString += "" + key + ": " + extras.getAsString(key) + "\n";
-		// } else if (key.equals("Nebenbeilagen")) {
-		// returnString += "" + key + ": " + extras.getAsString(key) + "\n";
-		// } else {
-		// returnString += key + ": " + extras.getAsString(key) + "\n";
-		// }
-		// }
 		return returnString;
 	}
 
@@ -412,6 +404,7 @@ public class MensaService extends RESTService {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response getDishes() throws EnvelopeOperationFailedException {
 		Set<String> dishes = getDishIndex();
+		System.out.println(dishes);
 		List<String> response = new ArrayList<>(dishes);
 		Collections.sort(response);
 		return Response.ok().entity(response).build();
@@ -565,14 +558,14 @@ public class MensaService extends RESTService {
 	 */
 	private void saveDishesToIndex() throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
 		System.out.println("Saving dishes to index...");
-		int mensaID;
+
 		Envelope envelope = this.getOrCreateDishIndexEnvelope();
 		HashSet<String> dishes = (HashSet<String>) envelope.getContent();
 		for (String mensa : SUPPORTED_MENSAS) {
 			JSONArray menu;
 			try {
-				mensaID = getMensaId(mensa);
-				menu = this.getMensaMenu("en-US", mensaID);
+				menu = this.getMensaMenu("en-US", getMensaId(mensa));
+				System.out.println(menu);
 			} catch (IOException e) {
 				menu = new JSONArray();
 
