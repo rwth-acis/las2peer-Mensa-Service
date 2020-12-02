@@ -565,15 +565,15 @@ public class MensaService extends RESTService {
 			JSONArray menu;
 			try {
 				menu = this.getMensaMenu("en-US", getMensaId(mensa));
-				System.out.println(menu);
+
 			} catch (IOException e) {
 				menu = new JSONArray();
 
 			}
-			JSONArray newDishes = menu;
-			for (Object dishObj : newDishes) {
 
-				String dish = ((JSONObject) dishObj).getAsString("value");
+			for (Object dishObj : menu) {
+
+				String dish = ((JSONObject) dishObj).getAsString("name");
 				if (!DISH_NAME_BLACKLIST.contains(dish)) {
 					// only save if the string represents a real dish
 					dishes.add(dish);
