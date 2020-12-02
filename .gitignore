@@ -19,3 +19,4 @@
 *.secret
 archiva_credentials.xml
 /.metadata/
+.vscode/
