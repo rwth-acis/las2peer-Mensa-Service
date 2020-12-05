@@ -1,7 +1,6 @@
 package i5.las2peer.services.mensaService;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -36,8 +35,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.apache.commons.io.IOUtils;
-
 import i5.las2peer.api.Context;
 import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.api.persistency.Envelope;
@@ -60,6 +57,8 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 
+import java.util.Calendar;
+
 /**
  * las2peer-Mensa-Service
  * <p>
@@ -74,6 +73,7 @@ import net.minidev.json.parser.ParseException;
 public class MensaService extends RESTService {
 
 	private final static long SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000L;
+	private final static long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000L;
 	private final static List<String> SUPPORTED_MENSAS = Arrays.asList("vita", "academica", "ahornstrasse");
 	private final static String ENVELOPE_PREFIX = "mensa-";
 	private final static String RATINGS_ENVELOPE_PREFIX = ENVELOPE_PREFIX + "ratings-";
@@ -127,19 +127,35 @@ public class MensaService extends RESTService {
 		return descriptions;
 	}
 
-	public JSONArray getMensaMenu(String language, int mensaID) throws IOException {
+	public JSONArray getMensaMenu(int mensaID) throws IOException {
 		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 		String mensaURL = "https://openmensa.org/api/v2/canteens/";
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		String day = dateFormat.format(new Date());
+		Calendar cal = Calendar.getInstance();
+		int weekday = cal.get(Calendar.DAY_OF_WEEK);
+
+		String day;
 		JSONArray menu = new JSONArray();
+
+		if (weekday == 1) { // Sunday
+			Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
+			day = dateFormat.format(monday);
+
+		} else if (weekday == 7) { // Saturday
+			Date sunday = new Date(new Date().getTime() + 2 * ONE_DAY_IN_MS);
+			day = dateFormat.format(sunday);
+		} else {
+			day = dateFormat.format(new Date());
+			System.out.println(day);
+		}
+		System.out.println(day);
+
 		mensaURL += mensaID + "/days/" + day + "/meals";
 
 		URL url = new URL(mensaURL);
-		URLConnection con = url.openConnection();
-		con.addRequestProperty("Content-type", "application/json");
-
 		try {
+			URLConnection con = url.openConnection();
+			con.addRequestProperty("Content-type", "application/json");
 			menu = (JSONArray) jsonParser.parse(con.getInputStream());
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -158,6 +174,20 @@ public class MensaService extends RESTService {
 			default:
 				return -1;
 		}
+	}
+
+	public JSONArray getDefaultMenu(String mensa) {
+		int id = getMensaId("academica");
+
+		try {
+			JSONArray menu = getMensaMenu(id);
+			System.out.println(menu);
+			return menu;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new JSONArray();
+		}
+
 	}
 
 	/**
@@ -188,16 +218,18 @@ public class MensaService extends RESTService {
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_2, language);
 		try {
 			mensaID = getMensaId(mensa);
-			if (mensaID == -1)
+			if (mensaID == -1) {
 				throw new IOException("Mensa Id not found");
+			}
 
-			mensaMenu = getMensaMenu(language, mensaID);
+			mensaMenu = getMensaMenu(mensaID);
 			if ("html".equals(format)) {
 				returnString = convertToHtml(mensaMenu);
 			} else {
 				returnString = mensaMenu.toString();
 			}
 		} catch (IOException e) {
+			e.printStackTrace();
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, mensaMenu.toString());
@@ -564,7 +596,7 @@ public class MensaService extends RESTService {
 		for (String mensa : SUPPORTED_MENSAS) {
 			JSONArray menu;
 			try {
-				menu = this.getMensaMenu("en-US", getMensaId(mensa));
+				menu = this.getMensaMenu(getMensaId(mensa));
 
 			} catch (IOException e) {
 				menu = new JSONArray();

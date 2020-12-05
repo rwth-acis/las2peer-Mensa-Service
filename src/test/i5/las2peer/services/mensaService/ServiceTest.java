@@ -102,19 +102,19 @@ public class ServiceTest {
 			// Try to get the menus
 
 			String[] mensas = { "vita", "academica" };
-			String[] languages = { "de-de", "en-US", "" };
+			
 
-			for (String language : languages) {
+			
 				for (String mensa : mensas) {
-					result = getMensa(client, mensa, language);
+					result = getMensa(client, mensa, "language");
 					Assert.assertEquals(200, result.getHttpCode());
 					System.out.println("Result of '" + mensa + "': " + result.getResponse().trim());
 				}
 				// Mensa not supported:
-				result = getMensa(client, "mensaGibtEsNicht", language);
+				result = getMensa(client, "mensaGibtEsNicht", "language");
 				Assert.assertEquals(404, result.getHttpCode());
 				System.out.println("Result of 'mensaGibtEsNicht': " + result.getResponse().trim());
-			}
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail(e.toString());
