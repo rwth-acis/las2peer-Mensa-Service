@@ -176,16 +176,20 @@ public class MensaService extends RESTService {
 		}
 	}
 
-	public JSONArray getDefaultMenu(String mensa) {
-		int id = getMensaId("academica");
-
+	public JSONObject getDefaultMenu() {
+		System.out.println("loading default menu");
+		JSONObject chatResponse = new JSONObject();
 		try {
-			JSONArray menu = getMensaMenu(id);
-			System.out.println(menu);
-			return menu;
+
+			String response = (String) getMensa("academica", "de-de", "html").getEntity();
+			System.out.println(response);
+			chatResponse.appendField("text", response);
+			return chatResponse;
+
 		} catch (Exception e) {
 			e.printStackTrace();
-			return new JSONArray();
+			chatResponse.appendField("text", "Sorry, a problem occured 🙁");
+			return chatResponse;
 		}
 
 	}
