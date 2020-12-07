@@ -176,29 +176,45 @@ public class MensaService extends RESTService {
 		}
 	}
 
+	/**
+	 * This method returns the current menu of supported canteens.
+	 *
+	 * @param body Body needs to contain at least the name of the mensa.
+	 * @return Returns a String containing the menu.
+	 */
 	@POST
-	@Path("/default")
-	@Consumes(MediaType.TEXT_PLAIN)
+	@Path("/menu")
+	@Consumes(MediaType.TEXT_HTML)
 	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "REPLACE THIS WITH AN APPROPRIATE FUNCTION NAME", notes = "REPLACE THIS WITH YOUR NOTES TO THE FUNCTION")
 	@ApiResponses(value = {
 			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE") })
-	public Response getDefaultMenu(String body) {
-		System.out.println("loading default menu");
+	public Response getMenu(String body) {
+		JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
 		JSONObject chatResponse = new JSONObject();
-		try {
 
-			String response = (String) getMensa("academica", "de-de", "html").getEntity();
-			System.out.println(response);
+		try {
+			JSONObject bodyJson = (JSONObject) p.parse(body);
+			String mensa = bodyJson.getAsString("mensa");
+			if (mensa == null)
+				throw new Exception("Mensa not specified");
+			String weekday = new SimpleDateFormat("EEEE").format(new Date());
+			String MESSAGE_HEADLINE = "Here is the menu for mensa " + mensa + " for " + weekday + " : \n \n";
+
+			String response = (String) getMensa(mensa, "de-de", "html").getEntity();
+			response = MESSAGE_HEADLINE + response;
 			chatResponse.appendField("text", response);
 			return Response.ok().entity(chatResponse).build();
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			chatResponse.appendField("text", "Sorry, a problem occured 🙁");
+			if ("Mensa not specified".equals(e.getMessage())) {
+				chatResponse.appendField("text", "Sorry, I could not identify the mensa 🙁");
+			} else {
+				chatResponse.appendField("text", "Sorry, a problem occured 🙁");
+			}
 			return Response.ok().entity(chatResponse).build();
 		}
-
 	}
 
 	/**
@@ -220,6 +236,8 @@ public class MensaService extends RESTService {
 		int mensaID;
 		JSONArray mensaMenu;
 		String returnString;
+
+		System.out.println("Attempt menu fetch for mensa " + mensa);
 
 		if (!isMensaSupported(mensa)) {
 			Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_20, mensa);
@@ -319,7 +337,7 @@ public class MensaService extends RESTService {
 				response = (String) getMensa(text, "de-de", "html").getEntity();
 				Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
 			} else {
-				response = "Mensa not supported";
+				response = "Mensa not supported 💁";
 				Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_20, text);
 			}
 		}
