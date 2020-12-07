@@ -124,6 +124,7 @@ public class MensaService extends RESTService {
 				"Time in ms to get return the rating for a dish. Format: Time is ms.");
 		descriptions.put("SERVICE_CUSTOM_MESSAGE_42",
 				"Time in ms to get return the pictures for a dish. Format: Time is ms.");
+		descriptions.put("SERVICE_CUSTOM_MESSAGE_43", "update Dish index");
 		return descriptions;
 	}
 
@@ -175,12 +176,14 @@ public class MensaService extends RESTService {
 		}
 	}
 
-	@GET
+	@POST
 	@Path("/default")
-	@ApiOperation(value = "Get the menu of a mensa", notes = "")
-	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Menu received"),
-			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Mensa not supported") })
-	public Response getDefaultMenu() {
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "REPLACE THIS WITH AN APPROPRIATE FUNCTION NAME", notes = "REPLACE THIS WITH YOUR NOTES TO THE FUNCTION")
+	@ApiResponses(value = {
+			@ApiResponse(code = HttpURLConnection.HTTP_OK, message = "REPLACE THIS WITH YOUR OK MESSAGE") })
+	public Response getDefaultMenu(String body) {
 		System.out.println("loading default menu");
 		JSONObject chatResponse = new JSONObject();
 		try {
