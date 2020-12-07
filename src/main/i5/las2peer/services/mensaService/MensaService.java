@@ -146,9 +146,8 @@ public class MensaService extends RESTService {
 			day = dateFormat.format(sunday);
 		} else {
 			day = dateFormat.format(new Date());
-			System.out.println(day);
+
 		}
-		System.out.println(day);
 
 		mensaURL += mensaID + "/days/" + day + "/meals";
 
@@ -176,7 +175,12 @@ public class MensaService extends RESTService {
 		}
 	}
 
-	public JSONObject getDefaultMenu() {
+	@GET
+	@Path("/default")
+	@ApiOperation(value = "Get the menu of a mensa", notes = "")
+	@ApiResponses(value = { @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Menu received"),
+			@ApiResponse(code = HttpURLConnection.HTTP_NOT_FOUND, message = "Mensa not supported") })
+	public Response getDefaultMenu() {
 		System.out.println("loading default menu");
 		JSONObject chatResponse = new JSONObject();
 		try {
@@ -184,12 +188,12 @@ public class MensaService extends RESTService {
 			String response = (String) getMensa("academica", "de-de", "html").getEntity();
 			System.out.println(response);
 			chatResponse.appendField("text", response);
-			return chatResponse;
+			return Response.ok().entity(chatResponse).build();
 
 		} catch (Exception e) {
 			e.printStackTrace();
 			chatResponse.appendField("text", "Sorry, a problem occured 🙁");
-			return chatResponse;
+			return Response.ok().entity(chatResponse).build();
 		}
 
 	}
