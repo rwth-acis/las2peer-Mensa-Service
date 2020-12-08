@@ -134,7 +134,6 @@ public class MensaService extends RESTService {
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar cal = Calendar.getInstance();
 		int weekday = cal.get(Calendar.DAY_OF_WEEK);
-
 		String day;
 		JSONArray menu = new JSONArray();
 
@@ -180,7 +179,7 @@ public class MensaService extends RESTService {
 	 * This method returns the current menu of supported canteens.
 	 *
 	 * @param body Body needs to contain at least the name of the mensa.
-	 * @return Returns a String containing the menu.
+	 * @return Returns a JSON String containing the menu under the text property.
 	 */
 	@POST
 	@Path("/menu")
@@ -198,8 +197,14 @@ public class MensaService extends RESTService {
 			String mensa = bodyJson.getAsString("mensa");
 			if (mensa == null)
 				throw new Exception("Mensa not specified");
+
+			String MESSAGE_HEADLINE = "";
 			String weekday = new SimpleDateFormat("EEEE").format(new Date());
-			String MESSAGE_HEADLINE = "Here is the menu for mensa " + mensa + " for " + weekday + " : \n \n";
+			if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) {
+				MESSAGE_HEADLINE += "Please note that the mensa is closed on week-ends. This is the menu for Monday\n";
+				weekday="Monday";
+			}
+			MESSAGE_HEADLINE += "Here is the menu for mensa " + mensa + " on " + weekday + " : \n \n";
 
 			String response = (String) getMensa(mensa, "de-de", "html").getEntity();
 			response = MESSAGE_HEADLINE + response;
