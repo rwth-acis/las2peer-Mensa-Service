@@ -59,6 +59,14 @@ import net.minidev.json.parser.ParseException;
 
 import java.util.Calendar;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.PreparedStatement;
+import java.sql.Blob;
+import java.sql.ResultSet;
+import i5.las2peer.services.mensaService.database.SQLDatabaseType;
+import i5.las2peer.services.mensaService.database.SQLDatabase;
+
 /**
  * las2peer-Mensa-Service
  * <p>
@@ -85,6 +93,31 @@ public class MensaService extends RESTService {
 	 */
 	private final static List<String> DISH_NAME_BLACKLIST = Arrays.asList("closed", "geschlossen");
 	private Date lastDishIndexUpdate;
+
+	private String databaseName;
+	private int databaseTypeInt = 1;
+	private SQLDatabaseType databaseType;
+	private String databaseHost;
+	private int databasePort;
+	private String databaseUser;
+	private String databasePassword;
+	private SQLDatabase database; // The database instance to write to.
+
+	public MensaService() {
+		super();
+		setFieldValues();
+		this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
+		System.out.println(this.databaseType + " " + this.databaseUser + " " + this.databasePassword + " "
+				+ this.databaseName + " " + this.databaseHost + " " + this.databasePort);
+		this.database = new SQLDatabase(this.databaseType, this.databaseUser, this.databasePassword, this.databaseName,
+				this.databaseHost, this.databasePort);
+		try {
+			Connection con = database.getDataSource().getConnection();
+			con.close();
+		} catch (SQLException e) {
+			System.out.println("Failed to connect to Database: " + e.getMessage());
+		}
+	}
 
 	public static int ordinalIndexOf(String str, String substr, int n) {
 		int pos = -1;
@@ -162,16 +195,29 @@ public class MensaService extends RESTService {
 		return menu;
 	}
 
-	public int getMensaId(String mensaName) {
-		switch (mensaName) {
-			case "vita":
-				return 96;
-			case "ahornstrasse":
-				return 95;
-			case "academica":
-				return 187;
-			default:
-				return -1;
+	private int getMensaId(String mensaName) {
+		MensaService service = (MensaService) Context.get().getService();
+		Connection dbConnection = null;
+		PreparedStatement statement = null;
+
+		try {
+			dbConnection = service.database.getDataSource().getConnection();
+			statement = dbConnection.prepareStatement("sql");
+			ResultSet res = statement.executeQuery();
+
+			switch (mensaName) {
+				case "vita":
+					return 96;
+				case "ahornstrasse":
+					return 95;
+				case "academica":
+					return 187;
+				default:
+					return -1;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return -1;
 		}
 	}
 
@@ -202,7 +248,7 @@ public class MensaService extends RESTService {
 			String weekday = new SimpleDateFormat("EEEE").format(new Date());
 			if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) {
 				MESSAGE_HEADLINE += "Please note that the mensa is closed on week-ends. This is the menu for Monday\n";
-				weekday="Monday";
+				weekday = "Monday";
 			}
 			MESSAGE_HEADLINE += "Here is the menu for mensa " + mensa + " on " + weekday + " : \n \n";
 
@@ -624,9 +670,10 @@ public class MensaService extends RESTService {
 	 */
 	private void saveDishesToIndex() throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
 		System.out.println("Saving dishes to index...");
-
-		Envelope envelope = this.getOrCreateDishIndexEnvelope();
-		HashSet<String> dishes = (HashSet<String>) envelope.getContent();
+		MensaService service = (MensaService) Context.get().getService();
+		Connection con = null;
+		PreparedStatement ps = null;
+		Response resp = null;
 		for (String mensa : SUPPORTED_MENSAS) {
 			JSONArray menu;
 			try {
