@@ -9,5 +9,6 @@
 	<classpathentry exported="true" kind="lib" path="lib/android-json-0.0.20131108.vaadin1.jar"/>
 	<classpathentry kind="src" path="lib"/>
 	<classpathentry kind="lib" path="lib/las2peer-bundle-1.0.0.jar"/>
+	<classpathentry kind="lib" path="servicebundle/commons-dbcp2-2.7.0.jar"/>
 	<classpathentry kind="output" path="output"/>
 </classpath>

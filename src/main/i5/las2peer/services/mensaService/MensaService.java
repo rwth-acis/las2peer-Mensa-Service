@@ -67,6 +67,8 @@ import java.sql.ResultSet;
 import i5.las2peer.services.mensaService.database.SQLDatabaseType;
 import i5.las2peer.services.mensaService.database.SQLDatabase;
 
+import i5.las2peer.api.ManualDeployment;
+
 /**
  * las2peer-Mensa-Service
  * <p>
@@ -77,6 +79,7 @@ import i5.las2peer.services.mensaService.database.SQLDatabase;
 @Api
 @SwaggerDefinition(info = @Info(title = "las2peer Mensa Service", version = "1.0.2", description = "A las2peer Mensa Service for the RWTH canteen.", contact = @Contact(name = "Alexander Tobias Neumann", url = "https://las2peer.org", email = "neumann@dbis.rwth-aachen.de"), license = @License(name = "BSD-3", url = "https://github.com/rwth-acis/las2peer-Mensa-Service/blob/master/LICENSE")))
 @ServicePath("/mensa")
+@ManualDeployment
 
 public class MensaService extends RESTService {
 
@@ -107,14 +110,16 @@ public class MensaService extends RESTService {
 		super();
 		setFieldValues();
 		this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
-		System.out.println(this.databaseType + " " + this.databaseUser + " " + this.databasePassword + " "
-				+ this.databaseName + " " + this.databaseHost + " " + this.databasePort);
 		this.database = new SQLDatabase(this.databaseType, this.databaseUser, this.databasePassword, this.databaseName,
 				this.databaseHost, this.databasePort);
 		try {
+			System.out.println("Connecting to las2peermon...");
 			Connection con = database.getDataSource().getConnection();
 			con.close();
+			System.out.println("Database connection successfull");
+
 		} catch (SQLException e) {
+			e.printStackTrace();
 			System.out.println("Failed to connect to Database: " + e.getMessage());
 		}
 	}
@@ -199,22 +204,26 @@ public class MensaService extends RESTService {
 		MensaService service = (MensaService) Context.get().getService();
 		Connection dbConnection = null;
 		PreparedStatement statement = null;
-
+		switch (mensaName) {
+			case "vita":
+				return 96;
+			case "ahornstrasse":
+				return 95;
+			case "academica":
+				return 187;
+		}
 		try {
 			dbConnection = service.database.getDataSource().getConnection();
-			statement = dbConnection.prepareStatement("sql");
+			statement = dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
+			statement.setString(1, mensaName);
 			ResultSet res = statement.executeQuery();
-
-			switch (mensaName) {
-				case "vita":
-					return 96;
-				case "ahornstrasse":
-					return 95;
-				case "academica":
-					return 187;
-				default:
-					return -1;
+			if (res.getFetchSize() > 1) {
+				// TODO handle more than one result
 			}
+			res.first();
+			int id = res.getInt("id");
+			return id;
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			return -1;
