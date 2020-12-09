@@ -21,3 +21,4 @@ archiva_credentials.xml
 /.metadata/
 .vscode/
 eclipse-formatter.xml
+etc/launcher-configuration.ini
