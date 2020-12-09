@@ -670,10 +670,8 @@ public class MensaService extends RESTService {
 	 */
 	private void saveDishesToIndex() throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
 		System.out.println("Saving dishes to index...");
-		MensaService service = (MensaService) Context.get().getService();
-		Connection con = null;
-		PreparedStatement ps = null;
-		Response resp = null;
+		Envelope envelope = this.getOrCreateDishIndexEnvelope();
+		HashSet<String> dishes = (HashSet<String>) envelope.getContent();
 		for (String mensa : SUPPORTED_MENSAS) {
 			JSONArray menu;
 			try {
