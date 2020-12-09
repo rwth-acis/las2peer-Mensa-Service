@@ -1,6 +1,7 @@
 package i5.las2peer.services.mensaService;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -60,6 +61,7 @@ import net.minidev.json.parser.ParseException;
 import java.util.Calendar;
 
 import java.sql.Connection;
+import java.sql.Savepoint;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Blob;
@@ -90,12 +92,15 @@ public class MensaService extends RESTService {
 	private final static String RATINGS_ENVELOPE_PREFIX = ENVELOPE_PREFIX + "ratings-";
 	private final static String PICTURES_ENVELOPE_PREFIX = ENVELOPE_PREFIX + "pictures-";
 	private final static String DISH_INDEX_ENVELOPE_NAME = ENVELOPE_PREFIX + "dishes";
+
+	private final static String OPEN_MENSA_API_ENDPOINT = "https://openmensa.org/api/v2";
 	/**
 	 * Some dish names are not real dishes but status indicators like that the mensa
 	 * counter is closed.
 	 */
 	private final static List<String> DISH_NAME_BLACKLIST = Arrays.asList("closed", "geschlossen");
 	private Date lastDishIndexUpdate;
+	private Date lastMensasUpdate;
 
 	private String databaseName;
 	private int databaseTypeInt = 1;
@@ -168,7 +173,7 @@ public class MensaService extends RESTService {
 
 	public JSONArray getMensaMenu(int mensaID) throws IOException {
 		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
-		String mensaURL = "https://openmensa.org/api/v2/canteens/";
+		String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		Calendar cal = Calendar.getInstance();
 		int weekday = cal.get(Calendar.DAY_OF_WEEK);
@@ -187,9 +192,9 @@ public class MensaService extends RESTService {
 
 		}
 
-		mensaURL += mensaID + "/days/" + day + "/meals";
+		urlString += mensaID + "/days/" + day + "/meals";
 
-		URL url = new URL(mensaURL);
+		URL url = new URL(urlString);
 		try {
 			URLConnection con = url.openConnection();
 			con.addRequestProperty("Content-type", "application/json");
@@ -755,4 +760,93 @@ public class MensaService extends RESTService {
 		}
 	}
 
+	public void fetchMensas() {
+		// only update the mensas once a month. Mensas do not change that often as
+		// mentioned on https://doc.openmensa.org/api/v2/canteens/
+		// if (lastMensasUpdate != null && ((new Date().getTime() -
+		// lastMensasUpdate.getTime()) < 30 * ONE_DAY_IN_MS)) {
+		// return;
+		// }
+
+		System.out.println("Updating mensas...");
+		MensaService service = (MensaService) Context.get().getService();
+		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+		Connection dbConnection = null;
+		String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
+		JSONArray mensas;
+		Savepoint save = null;
+		int updates = 0; // number of entries modified
+
+		try {
+			dbConnection = service.database.getDataSource().getConnection();
+			dbConnection.setAutoCommit(false);
+			save = dbConnection.setSavepoint();
+
+			URL url = new URL(urlString);
+			URLConnection con = url.openConnection();
+			InputStream in = con.getInputStream();
+			mensas = (JSONArray) jsonParser.parse(in);
+			for (Object mensa : mensas) {
+				JSONObject json = (JSONObject) mensa;
+
+				updates += addOrUpdateMensaEntry(json, dbConnection);
+			}
+			save = dbConnection.setSavepoint();
+			System.out.println(updates + " entries added on first batch");
+			Integer totalPages = Integer.parseInt(con.getHeaderField("x-total-pages"));
+
+			if (totalPages == 1) {
+				dbConnection.commit();
+				dbConnection.releaseSavepoint(save);
+				return;
+			}
+
+			for (Integer page = 1; page <= totalPages; page++) {
+
+				urlString = OPEN_MENSA_API_ENDPOINT + "/canteens?page=" + page.toString();
+				url = new URL(urlString);
+				con = url.openConnection();
+				mensas = (JSONArray) jsonParser.parse(con.getInputStream());
+				for (Object mensa : mensas) {
+					JSONObject json = (JSONObject) mensa;
+					updates += addOrUpdateMensaEntry(json, dbConnection);
+				}
+
+				dbConnection.releaseSavepoint(save);
+				save = dbConnection.setSavepoint();
+			}
+			dbConnection.commit();
+			dbConnection.releaseSavepoint(save);
+			System.out.println(updates + " entries added in total");
+		} catch (SQLException e) {
+
+			System.out.println("Database error: " + e.getMessage());
+			try {
+				dbConnection.rollback(save);
+			} catch (SQLException e2) {
+				e2.printStackTrace();
+			}
+		} catch (IOException | ParseException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private int addOrUpdateMensaEntry(JSONObject obj, Connection con) throws SQLException {
+		PreparedStatement statement = con.prepareStatement(
+				"IF EXISTS (UPDATE mensas SET (?,?,?) WHERE id = ? ) ElSE INSERT INTO mensas VALUES (? ,? ,? ,?)");
+		statement.setString(4, obj.getAsString("id"));
+		statement.setString(5, obj.getAsString("id"));
+
+		statement.setString(1, obj.getAsString("name"));
+		statement.setString(6, obj.getAsString("name"));
+
+		statement.setString(2, obj.getAsString("city"));
+		statement.setString(7, obj.getAsString("city"));
+
+		statement.setString(3, obj.getAsString("address"));
+		statement.setString(8, obj.getAsString("address"));
+
+		return statement.executeUpdate();
+	}
 }

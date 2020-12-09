@@ -17,6 +17,7 @@ public class PrematchingRequestFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext ctx) {
         MensaService service = (MensaService) Context.getCurrent().getService();
+        service.fetchMensas();
         service.updateDishes();
     }
 }
