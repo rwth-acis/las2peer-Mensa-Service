@@ -94,6 +94,7 @@ public class MensaService extends RESTService {
 	private final static String DISH_INDEX_ENVELOPE_NAME = ENVELOPE_PREFIX + "dishes";
 
 	private final static String OPEN_MENSA_API_ENDPOINT = "https://openmensa.org/api/v2";
+
 	/**
 	 * Some dish names are not real dishes but status indicators like that the mensa
 	 * counter is closed.
@@ -110,23 +111,27 @@ public class MensaService extends RESTService {
 	private String databaseUser;
 	private String databasePassword;
 	private SQLDatabase database; // The database instance to write to.
+	private int prepStatementcount = 0;
 
 	public MensaService() {
 		super();
 		setFieldValues();
 		this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
-		this.database = new SQLDatabase(this.databaseType, this.databaseUser, this.databasePassword, this.databaseName,
-				this.databaseHost, this.databasePort);
-		try {
-			System.out.println("Connecting to las2peermon...");
-			Connection con = database.getDataSource().getConnection();
-			con.close();
-			System.out.println("Database connection successfull");
+		if (this.database == null) {
+			this.database = new SQLDatabase(this.databaseType, this.databaseUser, this.databasePassword,
+					this.databaseName, this.databaseHost, this.databasePort);
+			try {
+				System.out.println("Connecting to las2peermon...");
+				Connection con = database.getDataSource().getConnection();
+				System.out.println("Database connection successfull");
+				con.close();
 
-		} catch (SQLException e) {
-			e.printStackTrace();
-			System.out.println("Failed to connect to Database: " + e.getMessage());
+			} catch (SQLException e) {
+				e.printStackTrace();
+				System.out.println("Failed to connect to Database: " + e.getMessage());
+			}
 		}
+
 	}
 
 	public static int ordinalIndexOf(String str, String substr, int n) {
@@ -139,7 +144,8 @@ public class MensaService extends RESTService {
 
 	@Override
 	protected void initResources() {
-		super.initResources();
+		System.out.println("init ressources");
+		// super.initResources();
 		getResourceConfig().register(PrematchingRequestFilter.class);
 	}
 
@@ -763,90 +769,93 @@ public class MensaService extends RESTService {
 	public void fetchMensas() {
 		// only update the mensas once a month. Mensas do not change that often as
 		// mentioned on https://doc.openmensa.org/api/v2/canteens/
-		// if (lastMensasUpdate != null && ((new Date().getTime() -
-		// lastMensasUpdate.getTime()) < 30 * ONE_DAY_IN_MS)) {
-		// return;
-		// }
-
+		if (lastMensasUpdate != null
+				&& (Math.abs(new Date().getTime() - lastMensasUpdate.getTime()) < 30 * ONE_DAY_IN_MS)) {
+			System.out.println("no need to update mensas");
+			return;
+		}
+		lastMensasUpdate = new Date();
 		System.out.println("Updating mensas...");
 		MensaService service = (MensaService) Context.get().getService();
 		JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
 		Connection dbConnection = null;
 		String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
 		JSONArray mensas;
-		Savepoint save = null;
+		// Savepoint save = null;
 		int updates = 0; // number of entries modified
+		Integer totalPages = 0;
 
 		try {
 			dbConnection = service.database.getDataSource().getConnection();
-			dbConnection.setAutoCommit(false);
-			save = dbConnection.setSavepoint();
-
+			// save = dbConnection.setSavepoint();
 			URL url = new URL(urlString);
 			URLConnection con = url.openConnection();
 			InputStream in = con.getInputStream();
-			mensas = (JSONArray) jsonParser.parse(in);
-			for (Object mensa : mensas) {
-				JSONObject json = (JSONObject) mensa;
+			totalPages = Integer.parseInt(con.getHeaderField("x-total-pages"));
+			System.out.println(totalPages + " pages to process");
 
-				updates += addOrUpdateMensaEntry(json, dbConnection);
+			mensas = (JSONArray) jsonParser.parse(in);
+
+			for (Object mensa : mensas) {
+				updates += addOrUpdateMensaEntry((JSONObject) mensa, dbConnection);
 			}
-			save = dbConnection.setSavepoint();
-			System.out.println(updates + " entries added on first batch");
-			Integer totalPages = Integer.parseInt(con.getHeaderField("x-total-pages"));
+			// save = dbConnection.setSavepoint();
 
 			if (totalPages == 1) {
-				dbConnection.commit();
-				dbConnection.releaseSavepoint(save);
+				// dbConnection.releaseSavepoint(save);
 				return;
 			}
 
 			for (Integer page = 1; page <= totalPages; page++) {
-
 				urlString = OPEN_MENSA_API_ENDPOINT + "/canteens?page=" + page.toString();
 				url = new URL(urlString);
 				con = url.openConnection();
 				mensas = (JSONArray) jsonParser.parse(con.getInputStream());
+
 				for (Object mensa : mensas) {
-					JSONObject json = (JSONObject) mensa;
-					updates += addOrUpdateMensaEntry(json, dbConnection);
+					updates += addOrUpdateMensaEntry((JSONObject) mensa, dbConnection);
 				}
 
-				dbConnection.releaseSavepoint(save);
-				save = dbConnection.setSavepoint();
+				// dbConnection.releaseSavepoint(save);
+				// save = dbConnection.setSavepoint();
 			}
-			dbConnection.commit();
-			dbConnection.releaseSavepoint(save);
-			System.out.println(updates + " entries added in total");
-		} catch (SQLException e) {
+			// dbConnection.releaseSavepoint(save);
+			System.out.println(updates + " entries modified in total");
 
+		} catch (SQLException e) {
 			System.out.println("Database error: " + e.getMessage());
-			try {
-				dbConnection.rollback(save);
-			} catch (SQLException e2) {
-				e2.printStackTrace();
-			}
+
+			// try {
+			// if (save != null) {
+			// System.out.println("Trying rollback to last savepoint...");
+			// dbConnection.rollback(save);
+			// }
+
+			// } catch (SQLException e2) {
+			// System.out.println("Rollback failed");
+			// e2.printStackTrace();
+
+			// }
 		} catch (IOException | ParseException e) {
 			e.printStackTrace();
+		} finally {
+			try {
+				dbConnection.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 		}
 
 	}
 
 	private int addOrUpdateMensaEntry(JSONObject obj, Connection con) throws SQLException {
-		PreparedStatement statement = con.prepareStatement(
-				"IF EXISTS (UPDATE mensas SET (?,?,?) WHERE id = ? ) ElSE INSERT INTO mensas VALUES (? ,? ,? ,?)");
-		statement.setString(4, obj.getAsString("id"));
-		statement.setString(5, obj.getAsString("id"));
-
-		statement.setString(1, obj.getAsString("name"));
-		statement.setString(6, obj.getAsString("name"));
-
-		statement.setString(2, obj.getAsString("city"));
-		statement.setString(7, obj.getAsString("city"));
-
-		statement.setString(3, obj.getAsString("address"));
-		statement.setString(8, obj.getAsString("address"));
-
+		PreparedStatement statement = con.prepareStatement("REPLACE INTO mensas VALUES(?,?,?,?)");
+		prepStatementcount++;
+		System.out.println("prepCount: " + prepStatementcount);
+		statement.setInt(1, Integer.parseInt(obj.getAsString("id")));
+		statement.setString(2, obj.getAsString("name"));
+		statement.setString(3, obj.getAsString("city"));
+		statement.setString(4, obj.getAsString("address"));
 		return statement.executeUpdate();
 	}
 }
