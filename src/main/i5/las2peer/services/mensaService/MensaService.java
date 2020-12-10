@@ -111,7 +111,6 @@ public class MensaService extends RESTService {
 	private String databaseUser;
 	private String databasePassword;
 	private SQLDatabase database; // The database instance to write to.
-	private int prepStatementcount = 0;
 
 	public MensaService() {
 		super();
@@ -200,13 +199,16 @@ public class MensaService extends RESTService {
 
 		urlString += mensaID + "/days/" + day + "/meals";
 
-		URL url = new URL(urlString);
 		try {
+			URL url = new URL(urlString);
 			URLConnection con = url.openConnection();
 			con.addRequestProperty("Content-type", "application/json");
 			menu = (JSONArray) jsonParser.parse(con.getInputStream());
 		} catch (ParseException e) {
 			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("Error on URL Connection to OpenMensa API");
+			throw e;
 		}
 		return menu;
 	}
@@ -308,7 +310,7 @@ public class MensaService extends RESTService {
 		JSONArray mensaMenu;
 		String returnString;
 
-		System.out.println("Attempt menu fetch for mensa " + mensa);
+		
 
 		if (!isMensaSupported(mensa)) {
 			Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_20, mensa);
@@ -329,9 +331,13 @@ public class MensaService extends RESTService {
 				returnString = mensaMenu.toString();
 			}
 		} catch (IOException e) {
+			System.out.println("eerrroor in mensa service");
 			e.printStackTrace();
-			return Response.status(Status.BAD_REQUEST).build();
+			return Response.status(Status.CONFLICT).entity("eerrroor in mensa service").build();
+		}catch(Exception e){
+			return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
 		}
+
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, mensaMenu.toString());
 		String responseContentType;
 		switch (format) {
@@ -341,6 +347,7 @@ public class MensaService extends RESTService {
 			default:
 				responseContentType = MediaType.APPLICATION_JSON;
 		}
+		System.out.println(returnString);
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
 				String.valueOf(System.currentTimeMillis() - responseStart));
 		return Response.ok().type(responseContentType).entity(returnString).build();
@@ -404,13 +411,10 @@ public class MensaService extends RESTService {
 		String text = form.getFirst("text");
 		String response = "";
 		if (cmd.equals("/mensa")) {
-			if (isMensaSupported(text)) {
-				response = (String) getMensa(text, "de-de", "html").getEntity();
-				Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
-			} else {
-				response = "Mensa not supported 💁";
-				Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_20, text);
-			}
+
+			response = (String) getMensa(text, "de-de", "html").getEntity();
+			Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
+
 		}
 		return Response.ok().entity(response).build();
 	}
@@ -825,21 +829,14 @@ public class MensaService extends RESTService {
 		} catch (SQLException e) {
 			System.out.println("Database error: " + e.getMessage());
 
-			// try {
-			// if (save != null) {
-			// System.out.println("Trying rollback to last savepoint...");
-			// dbConnection.rollback(save);
-			// }
-
-			// } catch (SQLException e2) {
-			// System.out.println("Rollback failed");
-			// e2.printStackTrace();
-
-			// }
+			
 		} catch (IOException | ParseException e) {
 			e.printStackTrace();
 		} finally {
 			try {
+				if (dbConnection!=null&&!dbConnection.isClosed()) {
+					dbConnection.close();
+				}
 				dbConnection.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -850,12 +847,12 @@ public class MensaService extends RESTService {
 
 	private int addOrUpdateMensaEntry(JSONObject obj, Connection con) throws SQLException {
 		PreparedStatement statement = con.prepareStatement("REPLACE INTO mensas VALUES(?,?,?,?)");
-		prepStatementcount++;
-		System.out.println("prepCount: " + prepStatementcount);
 		statement.setInt(1, Integer.parseInt(obj.getAsString("id")));
 		statement.setString(2, obj.getAsString("name"));
 		statement.setString(3, obj.getAsString("city"));
 		statement.setString(4, obj.getAsString("address"));
-		return statement.executeUpdate();
+		int updated = statement.executeUpdate();
+		statement.close();
+		return updated;
 	}
 }

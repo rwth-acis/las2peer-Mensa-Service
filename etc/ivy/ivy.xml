@@ -18,7 +18,6 @@
 
         <!-- service dependencies -->
         <!-- Add service dependencies here -->
-        <dependency org="com.neovisionaries" name="nv-websocket-client" rev="2.9" conf="bundle->*" />
         <dependency org="org.json" name="json" rev="20190722" conf="bundle->*" />
         <dependency org="mysql" name="mysql-connector-java" rev="8.0.13" conf="bundle->*" />
         <dependency org="org.apache.commons" name="commons-dbcp2" rev="2.7.0" conf="bundle->*">

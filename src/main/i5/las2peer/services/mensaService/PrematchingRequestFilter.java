@@ -18,6 +18,6 @@ public class PrematchingRequestFilter implements ContainerRequestFilter {
     public void filter(ContainerRequestContext ctx) {
         MensaService service = (MensaService) Context.getCurrent().getService();
         service.fetchMensas();
-        // service.updateDishes();
+        service.updateDishes();
     }
 }
