@@ -61,10 +61,8 @@ import net.minidev.json.parser.ParseException;
 import java.util.Calendar;
 
 import java.sql.Connection;
-import java.sql.Savepoint;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
-import java.sql.Blob;
 import java.sql.ResultSet;
 import i5.las2peer.services.mensaService.database.SQLDatabaseType;
 import i5.las2peer.services.mensaService.database.SQLDatabase;
@@ -143,8 +141,7 @@ public class MensaService extends RESTService {
 
 	@Override
 	protected void initResources() {
-		System.out.println("init ressources");
-		// super.initResources();
+		super.initResources();
 		getResourceConfig().register(PrematchingRequestFilter.class);
 	}
 
@@ -330,10 +327,6 @@ public class MensaService extends RESTService {
 			} else {
 				returnString = mensaMenu.toString();
 			}
-		} catch (IOException e) {
-			System.out.println("eerrroor in mensa service");
-			e.printStackTrace();
-			return Response.status(Status.CONFLICT).entity("eerrroor in mensa service").build();
 		}catch(Exception e){
 			return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
 		}
@@ -347,7 +340,7 @@ public class MensaService extends RESTService {
 			default:
 				responseContentType = MediaType.APPLICATION_JSON;
 		}
-		System.out.println(returnString);
+		
 		Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
 				String.valueOf(System.currentTimeMillis() - responseStart));
 		return Response.ok().type(responseContentType).entity(returnString).build();
@@ -540,7 +533,6 @@ public class MensaService extends RESTService {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response getDishes() throws EnvelopeOperationFailedException {
 		Set<String> dishes = getDishIndex();
-		System.out.println(dishes);
 		List<String> response = new ArrayList<>(dishes);
 		Collections.sort(response);
 		return Response.ok().entity(response).build();
@@ -775,7 +767,6 @@ public class MensaService extends RESTService {
 		// mentioned on https://doc.openmensa.org/api/v2/canteens/
 		if (lastMensasUpdate != null
 				&& (Math.abs(new Date().getTime() - lastMensasUpdate.getTime()) < 30 * ONE_DAY_IN_MS)) {
-			System.out.println("no need to update mensas");
 			return;
 		}
 		lastMensasUpdate = new Date();
@@ -785,13 +776,11 @@ public class MensaService extends RESTService {
 		Connection dbConnection = null;
 		String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
 		JSONArray mensas;
-		// Savepoint save = null;
 		int updates = 0; // number of entries modified
 		Integer totalPages = 0;
 
 		try {
 			dbConnection = service.database.getDataSource().getConnection();
-			// save = dbConnection.setSavepoint();
 			URL url = new URL(urlString);
 			URLConnection con = url.openConnection();
 			InputStream in = con.getInputStream();
@@ -803,10 +792,8 @@ public class MensaService extends RESTService {
 			for (Object mensa : mensas) {
 				updates += addOrUpdateMensaEntry((JSONObject) mensa, dbConnection);
 			}
-			// save = dbConnection.setSavepoint();
 
 			if (totalPages == 1) {
-				// dbConnection.releaseSavepoint(save);
 				return;
 			}
 
@@ -820,24 +807,16 @@ public class MensaService extends RESTService {
 					updates += addOrUpdateMensaEntry((JSONObject) mensa, dbConnection);
 				}
 
-				// dbConnection.releaseSavepoint(save);
-				// save = dbConnection.setSavepoint();
 			}
-			// dbConnection.releaseSavepoint(save);
 			System.out.println(updates + " entries modified in total");
 
-		} catch (SQLException e) {
-			System.out.println("Database error: " + e.getMessage());
-
-			
-		} catch (IOException | ParseException e) {
+		} catch (IOException | ParseException | SQLException e) {
 			e.printStackTrace();
 		} finally {
 			try {
 				if (dbConnection!=null&&!dbConnection.isClosed()) {
 					dbConnection.close();
 				}
-				dbConnection.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
