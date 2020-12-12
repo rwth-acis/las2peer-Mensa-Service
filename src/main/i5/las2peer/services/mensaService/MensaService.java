@@ -283,7 +283,6 @@ public class MensaService extends RESTService {
     ResultSet res;
     try {
       dbConnection = service.database.getDataSource().getConnection();
-
       statement =
         dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
       statement.setString(1, "%" + mensaName + "%");
@@ -351,11 +350,7 @@ public class MensaService extends RESTService {
       String first = mensas.getString("name");
       id = mensas.getInt("id");
       String response =
-        "I found the following mensas for " +
-        mensa +
-        ": \n  1. " +
-        first +
-        "\n";
+        "I found the following mensas for " + mensa + ": \n1. " + first + "\n";
 
       int i = 2;
       while (mensas.next() && i < maxEntries) { //at least 2 entries
@@ -417,7 +412,8 @@ public class MensaService extends RESTService {
         "Could not get the menu for mensa " +
         name +
         ".\n The mensa is probably closed on " +
-        weekday
+        weekday +
+        ", or no menu has been published yet.😔"
       );
     }
   }
