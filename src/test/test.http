@@ -1,2 +1,6 @@
-GET http://localhost:8080/mensa/default
-Content-Type: application/json
+POST http://localhost:8080/mensa/menu
+Content-Type: text/html
+
+{"mensa":"LTMA RES"}
+
+

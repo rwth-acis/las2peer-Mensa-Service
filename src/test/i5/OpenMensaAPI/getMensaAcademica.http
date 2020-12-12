@@ -1,4 +1,0 @@
-
-//get canteens in a radius of 10km from Aachen
-GET https://openmensa.org/api/v2/canteens?near[lat]=50.7753455&near[lng]=6.0838868&near[dist]=10
-

@@ -280,23 +280,24 @@ public class MensaService extends RESTService {
     MensaService service = (MensaService) Context.get().getService();
     Connection dbConnection = null;
     PreparedStatement statement = null;
+    ResultSet res;
     try {
       dbConnection = service.database.getDataSource().getConnection();
 
-      statement =
-        dbConnection.prepareStatement(
-          "SELECT (1) FROM mensas WHERE name LIKE ? ESCAPE ''"
-        );
-      statement.setString(1, "%" + mensaName + "%");
-      ResultSet res = statement.executeQuery();
-      res.last();
-      System.out.println(res.getRow());
+      // statement =
+      //   dbConnection.prepareStatement(
+      //     "SELECT (1) FROM mensas WHERE name LIKE %?% ESCAPE ''"
+      //   );
+      // statement.setString(1, mensaName);
+      //  res = statement.executeQuery();
+      // res.last();
+      // System.out.println(res.getRow());
 
       statement =
         dbConnection.prepareStatement(
-          "SELECT * FROM mensas WHERE name LIKE ? ESCAPE '' "
+          "SELECT * FROM mensas WHERE REGEXP_LIKE( name,'[A-Za-z]*?[A-Za-z]*')"
         );
-      statement.setString(1, "%" + mensaName + "%");
+      statement.setString(1, mensaName);
       res = statement.executeQuery();
       System.out.println(res.getRow());
 
@@ -345,7 +346,7 @@ public class MensaService extends RESTService {
   public Response getMenu(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
-    int maxFetchSize = 10;
+    int id;
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -355,28 +356,28 @@ public class MensaService extends RESTService {
       );
 
       ResultSet mensas = findMensasByName(mensa);
-      if (mensas == null || mensas.getFetchSize() == 0) {
-        throw new ChatException(
-          "Sorry, I could not find a mensa with that name. 💁"
-        );
-      } else if (mensas.getFetchSize() == 1) {
-        String message = createMenuChatResponse(mensas);
-        chatResponse.appendField("text", message);
-      } else {
-        String response = "";
-        if (mensas.getFetchSize() > maxFetchSize) {
-          response +=
-            "The list of results is too long. only showing the " +
-            maxFetchSize +
-            " first results\n ";
-        }
-        response += "I found the following mensas: \n";
-        for (int i = 0; i < maxFetchSize && mensas.next(); i++) {
-          response += i + ". " + mensas.getString("name") + "\n";
-        }
-        response += "Specify your mensa by providing the number!";
-      }
+      if (!mensas.first()) throw new ChatException(
+        "Sorry, I could not find a mensa with that name. 💁"
+      );
+      mensas.next(); //move to first entry
+      String first = mensas.getString("name");
+      id = mensas.getInt("id");
+      String response = "I found the following mensas: \n 1. " + first + "\n";
 
+      int i = 2;
+      while (mensas.next()) { //at least 2 entries
+        response += i + ". " + mensas.getString("name") + "\n";
+
+        i++;
+      }
+      response += "Specify your mensa by providing the appropriate number!";
+
+      if (i == 2) { //exactly 1 entry
+        String menu = createMenuChatResponse(mensa, id);
+        chatResponse.appendField("text", menu);
+      } else {
+        chatResponse.appendField("text", response);
+      }
       return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
@@ -388,7 +389,7 @@ public class MensaService extends RESTService {
     }
   }
 
-  private String createMenuChatResponse(ResultSet mensa)
+  private String createMenuChatResponse(String name, int id)
     throws SQLException, ChatException {
     String MESSAGE_HEAD = "";
     String weekday = new SimpleDateFormat("EEEE").format(new Date());
@@ -399,19 +400,15 @@ public class MensaService extends RESTService {
       weekday = "Monday";
     }
     MESSAGE_HEAD +=
-      "Here is the menu for mensa " +
-      mensa.getString("name") +
-      " on " +
-      weekday +
-      " : \n \n";
+      "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
     try {
-      JSONArray mensaMenu = getMensaMenu(mensa.getInt("id"));
+      JSONArray mensaMenu = getMensaMenu(id);
       String returnString = convertToHtml(mensaMenu);
       return MESSAGE_HEAD + returnString;
     } catch (IOException e) {
       throw new ChatException(
         "Could not get the menu for mensa" +
-        mensa.getString("name") +
+        name +
         ".\n The mensa is probably closed on " +
         weekday +
         "(" +
