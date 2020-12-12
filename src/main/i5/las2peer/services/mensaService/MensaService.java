@@ -284,20 +284,9 @@ public class MensaService extends RESTService {
     try {
       dbConnection = service.database.getDataSource().getConnection();
 
-      // statement =
-      //   dbConnection.prepareStatement(
-      //     "SELECT (1) FROM mensas WHERE name LIKE %?% ESCAPE ''"
-      //   );
-      // statement.setString(1, mensaName);
-      //  res = statement.executeQuery();
-      // res.last();
-      // System.out.println(res.getRow());
-
       statement =
-        dbConnection.prepareStatement(
-          "SELECT * FROM mensas WHERE REGEXP_LIKE( name,'[A-Za-z]*?[A-Za-z]*')"
-        );
-      statement.setString(1, mensaName);
+        dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
+      statement.setString(1, "%" + mensaName + "%");
       res = statement.executeQuery();
       System.out.println(res.getRow());
 
@@ -373,7 +362,7 @@ public class MensaService extends RESTService {
       response += "Specify your mensa by providing the appropriate number!";
 
       if (i == 2) { //exactly 1 entry
-        String menu = createMenuChatResponse(mensa, id);
+        String menu = createMenuChatResponse(first, id);
         chatResponse.appendField("text", menu);
       } else {
         chatResponse.appendField("text", response);
@@ -389,31 +378,33 @@ public class MensaService extends RESTService {
     }
   }
 
+  /**Gets the menu for the mensa and formats it as a string which can be presented in chat
+   * @param name The name of the mensa
+   * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
+   */
   private String createMenuChatResponse(String name, int id)
     throws SQLException, ChatException {
     String MESSAGE_HEAD = "";
     String weekday = new SimpleDateFormat("EEEE").format(new Date());
-    String date = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-    if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) {
+
+    if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
       MESSAGE_HEAD +=
         "Please note that the mensa is closed on week-ends. This is the menu for Monday\n";
       weekday = "Monday";
     }
     MESSAGE_HEAD +=
       "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
+
     try {
       JSONArray mensaMenu = getMensaMenu(id);
       String returnString = convertToHtml(mensaMenu);
       return MESSAGE_HEAD + returnString;
     } catch (IOException e) {
       throw new ChatException(
-        "Could not get the menu for mensa" +
+        "Could not get the menu for mensa " +
         name +
         ".\n The mensa is probably closed on " +
-        weekday +
-        "(" +
-        date +
-        ")\n"
+        weekday
       );
     }
   }
@@ -429,7 +420,7 @@ public class MensaService extends RESTService {
   @Path("/{mensa}")
   @ApiOperation(
     value = "Get the menu of a mensa",
-    notes = "The mensa must be supported with the Studierendenwerk"
+    notes = "The mensa must be supported with the Studierendenwerk in Aachen."
   )
   @ApiResponses(
     value = {
@@ -936,13 +927,6 @@ public class MensaService extends RESTService {
     }
   }
 
-  protected static class ChatException extends Exception {
-
-    protected ChatException(String message) {
-      super(message);
-    }
-  }
-
   private static class Picture implements Serializable {
 
     public String image;
@@ -964,7 +948,16 @@ public class MensaService extends RESTService {
     }
   }
 
-  public void fetchMensas() {
+  /** Exceptions ,with messages, that should be returned in Chat */
+  protected static class ChatException extends Exception {
+
+    protected ChatException(String message) {
+      super(message);
+    }
+  }
+
+  /** Updates the mensas in the database*/
+  protected void fetchMensas() {
     // only update the mensas once a month. Mensas do not change that often as
     // mentioned on https://doc.openmensa.org/api/v2/canteens/
     if (
