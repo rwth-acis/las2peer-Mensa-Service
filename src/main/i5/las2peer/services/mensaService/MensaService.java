@@ -288,8 +288,6 @@ public class MensaService extends RESTService {
         dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
       statement.setString(1, "%" + mensaName + "%");
       res = statement.executeQuery();
-      System.out.println(res.getRow());
-
       return res;
     } catch (Exception e) {
       e.printStackTrace();
@@ -336,6 +334,7 @@ public class MensaService extends RESTService {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
     int id;
+    final int maxEntries = 20;
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -351,15 +350,29 @@ public class MensaService extends RESTService {
       mensas.next(); //move to first entry
       String first = mensas.getString("name");
       id = mensas.getInt("id");
-      String response = "I found the following mensas: \n 1. " + first + "\n";
+      String response =
+        "I found the following mensas for " +
+        mensa +
+        ": \n  1. " +
+        first +
+        "\n";
 
       int i = 2;
-      while (mensas.next()) { //at least 2 entries
+      while (mensas.next() && i < maxEntries) { //at least 2 entries
         response += i + ". " + mensas.getString("name") + "\n";
-
         i++;
       }
-      response += "Specify your mensa by providing the appropriate number!";
+      if (i == maxEntries) {
+        mensas.last();
+        int total = mensas.getRow();
+        if (total - maxEntries > 0) {
+          response += "and " + (total - maxEntries) + " more...\n";
+          response +=
+            "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
+        } else {
+          response += "Specify your mensa by providing the appropriate number!";
+        }
+      }
 
       if (i == 2) { //exactly 1 entry
         String menu = createMenuChatResponse(first, id);
