@@ -31,6 +31,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -60,6 +61,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Response.StatusType;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -701,10 +703,20 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response getDishes() throws EnvelopeOperationFailedException {
-    Set<String> dishes = getDishIndex();
-    List<String> response = new ArrayList<>(dishes);
-    Collections.sort(response);
-    return Response.ok().entity(response).build();
+    JSONArray dishes = new JSONArray();
+    MensaService service = (MensaService) Context.get().getService();
+    try {
+      Connection con = service.database.getDataSource().getConnection();
+      ResultSet res = con
+        .prepareStatement("SELECT DISTINCT (name) FROM dishes")
+        .executeQuery();
+      while (res.next()) {
+        dishes.appendElement(res.getString("name"));
+      }
+      return Response.ok().entity(dishes).build();
+    } catch (Exception e) {
+      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+    }
   }
 
   private boolean isMensaSupported(String mensa) {
