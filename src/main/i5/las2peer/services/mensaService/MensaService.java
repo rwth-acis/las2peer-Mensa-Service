@@ -294,6 +294,7 @@ public class MensaService extends RESTService {
     }
   }
 
+  // hard coded IDs of mensas in Aachen
   private int getMensaId(String mensaName) {
     switch (mensaName) {
       case "vita":
@@ -343,11 +344,11 @@ public class MensaService extends RESTService {
       );
 
       ResultSet mensas = findMensasByName(mensa);
-      if (!mensas.first()) throw new ChatException(
+      if (!mensas.next()) throw new ChatException(
         "Sorry, I could not find a mensa with that name. 💁"
       );
-      mensas.next(); //move to first entry
-      String first = mensas.getString("name");
+
+      String first = mensas.getString("name"); // first entry
       id = mensas.getInt("id");
       String response =
         "I found the following mensas for " + mensa + ": \n1. " + first + "\n";
@@ -365,7 +366,7 @@ public class MensaService extends RESTService {
           response +=
             "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
         } else {
-          response += "Specify your mensa by providing the appropriate number!";
+          //  response += "Specify your mensa by providing the appropriate number!";
         }
       }
 
