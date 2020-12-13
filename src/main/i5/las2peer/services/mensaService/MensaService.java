@@ -1,5 +1,6 @@
 package i5.las2peer.services.mensaService;
 
+import com.fasterxml.jackson.databind.deser.std.DateDeserializers.SqlDateDeserializer;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
@@ -110,15 +111,7 @@ public class MensaService extends RESTService {
   private static final String OPEN_MENSA_API_ENDPOINT =
     "https://openmensa.org/api/v2";
 
-  /**
-   * Some dish names are not real dishes but status indicators like that the mensa
-   * counter is closed.
-   */
-  private static final List<String> DISH_NAME_BLACKLIST = Arrays.asList(
-    "closed",
-    "geschlossen"
-  );
-  private Date lastDishIndexUpdate;
+  private Map<Integer, Date> lastDishUpdate;
   private Date lastMensasUpdate;
 
   private String databaseName;
@@ -134,25 +127,24 @@ public class MensaService extends RESTService {
     super();
     setFieldValues();
     this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
-    if (this.database == null) {
-      this.database =
-        new SQLDatabase(
-          this.databaseType,
-          this.databaseUser,
-          this.databasePassword,
-          this.databaseName,
-          this.databaseHost,
-          this.databasePort
-        );
-      try {
-        System.out.println("Connecting to las2peermon...");
-        Connection con = database.getDataSource().getConnection();
-        System.out.println("Database connection successfull");
-        con.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-        System.out.println("Failed to connect to Database: " + e.getMessage());
-      }
+    this.lastDishUpdate = new HashMap<>();
+    this.database =
+      new SQLDatabase(
+        this.databaseType,
+        this.databaseUser,
+        this.databasePassword,
+        this.databaseName,
+        this.databaseHost,
+        this.databasePort
+      );
+    try {
+      System.out.println("Connecting to las2peermon...");
+      Connection con = database.getDataSource().getConnection();
+      System.out.println("Database connection successfull");
+      con.close();
+    } catch (SQLException e) {
+      e.printStackTrace();
+      System.out.println("Failed to connect to Database: " + e.getMessage());
     }
   }
 
@@ -358,24 +350,23 @@ public class MensaService extends RESTService {
         response += i + ". " + mensas.getString("name") + "\n";
         i++;
       }
-      if (i == maxEntries) {
-        mensas.last();
-        int total = mensas.getRow();
-        if (total - maxEntries > 0) {
-          response += "and " + (total - maxEntries) + " more...\n";
-          response +=
-            "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
-        } else {
-          //  response += "Specify your mensa by providing the appropriate number!";
-        }
+      switch (i) {
+        case 2:
+          String menu = createMenuChatResponse(first, id);
+          response = menu;
+          saveDishesToIndex(id);
+          break;
+        case maxEntries:
+          mensas.last();
+          int total = mensas.getRow();
+          if (total - maxEntries > 0) {
+            response += "and " + (total - maxEntries) + " more...\n";
+            response +=
+              "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
+          }
+          break;
       }
-
-      if (i == 2) { //exactly 1 entry
-        String menu = createMenuChatResponse(first, id);
-        chatResponse.appendField("text", menu);
-      } else {
-        chatResponse.appendField("text", response);
-      }
+      chatResponse.appendField("text", response);
       return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
@@ -476,6 +467,7 @@ public class MensaService extends RESTService {
       } else {
         returnString = mensaMenu.toString();
       }
+      saveDishesToIndex(mensaID);
     } catch (Exception e) {
       return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
     }
@@ -854,57 +846,35 @@ public class MensaService extends RESTService {
     return sdf.format(date);
   }
 
-  void updateDishes() {
-    // if the new dishes have not been persisted within the last six hours we do so
-    // now
-    if (
-      lastDishIndexUpdate == null ||
-      Math.abs(lastDishIndexUpdate.getTime() - new Date().getTime()) >
-      SIX_HOURS_IN_MS
-    ) {
-      Date previousLastDishIndexUpdate = this.lastDishIndexUpdate;
-      lastDishIndexUpdate = new Date();
-      try {
-        this.saveDishesToIndex();
-      } catch (
-        EnvelopeAccessDeniedException | EnvelopeOperationFailedException e
-      ) {
-        e.printStackTrace();
-        this.lastDishIndexUpdate = previousLastDishIndexUpdate;
-      }
-    }
-  }
-
-  /**
-   * Get all dishes from all mensa menus and save them to the distributed storage.
-   *
-   * @throws EnvelopeAccessDeniedException
-   * @throws EnvelopeOperationFailedException
-   */
-  private void saveDishesToIndex()
-    throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+  private void saveDishesToIndex(int mensaId) {
     System.out.println("Saving dishes to index...");
-    Envelope envelope = this.getOrCreateDishIndexEnvelope();
-    HashSet<String> dishes = (HashSet<String>) envelope.getContent();
-    for (String mensa : SUPPORTED_MENSAS) {
-      JSONArray menu;
-      try {
-        menu = this.getMensaMenu(getMensaId(mensa));
-      } catch (IOException e) {
-        menu = new JSONArray();
-      }
-
-      for (Object dishObj : menu) {
-        String dish = ((JSONObject) dishObj).getAsString("name");
-        if (!DISH_NAME_BLACKLIST.contains(dish)) {
-          // only save if the string represents a real dish
-          dishes.add(dish);
-        }
-      }
+    Date lastUpdate = this.lastDishUpdate.get(mensaId);
+    if (
+      lastUpdate != null &&
+      Math.abs(lastUpdate.getTime() - new Date().getTime()) < SIX_HOURS_IN_MS
+    ) {
+      System.out.println("no need to update dishes");
+      return;
     }
 
-    envelope.setContent(dishes);
-    Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+    lastDishUpdate.put(mensaId, new Date());
+    try {
+      JSONArray menu = getMensaMenu(mensaId);
+      MensaService service = (MensaService) Context.get().getService();
+      Connection con = service.database.getDataSource().getConnection();
+      menu.forEach(
+        menuitem -> {
+          try {
+            addOrUpdateDishEntry((JSONObject) menuitem, con, mensaId);
+          } catch (SQLException e) {
+            e.printStackTrace();
+          }
+        }
+      );
+    } catch (Exception e) {
+      System.out.println("Error couldnt save dishes");
+      e.printStackTrace();
+    }
   }
 
   private static class Rating implements Serializable {
@@ -1033,6 +1003,10 @@ public class MensaService extends RESTService {
     }
   }
 
+  /** Updates a mensa entry in the database
+   * @param obj the entry, which sould be modified
+   * @return number of updates
+   */
   private int addOrUpdateMensaEntry(JSONObject obj, Connection con)
     throws SQLException {
     PreparedStatement statement = con.prepareStatement(
@@ -1042,6 +1016,26 @@ public class MensaService extends RESTService {
     statement.setString(2, obj.getAsString("name"));
     statement.setString(3, obj.getAsString("city"));
     statement.setString(4, obj.getAsString("address"));
+    int updated = statement.executeUpdate();
+    statement.close();
+    return updated;
+  }
+
+  /** Updates a dish entry in the database
+   * @param obj the entry, which sould be modified
+   * @param con database connection
+   * @param mensaId the id of the mensa at which the dish is served
+   * @return number of updates
+   */
+  private int addOrUpdateDishEntry(JSONObject obj, Connection con, int mensaId)
+    throws SQLException {
+    PreparedStatement statement = con.prepareStatement(
+      "REPLACE INTO dishes VALUES(?,?,?,?)"
+    );
+    statement.setInt(1, Integer.parseInt(obj.getAsString("id")));
+    statement.setInt(2, mensaId);
+    statement.setString(3, obj.getAsString("name"));
+    statement.setString(4, obj.getAsString("category"));
     int updated = statement.executeUpdate();
     statement.close();
     return updated;
