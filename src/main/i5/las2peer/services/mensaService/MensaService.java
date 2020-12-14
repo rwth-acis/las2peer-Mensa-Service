@@ -28,7 +28,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -89,13 +88,13 @@ public class MensaService extends RESTService {
   //   "academica",
   //   "ahornstrasse"
   // );
-  private static final String ENVELOPE_PREFIX = "mensa-";
-  private static final String RATINGS_ENVELOPE_PREFIX =
-    ENVELOPE_PREFIX + "ratings-";
-  private static final String PICTURES_ENVELOPE_PREFIX =
-    ENVELOPE_PREFIX + "pictures-";
-  private static final String DISH_INDEX_ENVELOPE_NAME =
-    ENVELOPE_PREFIX + "dishes";
+  // private static final String ENVELOPE_PREFIX = "mensa-";
+  // private static final String RATINGS_ENVELOPE_PREFIX =
+  //   ENVELOPE_PREFIX + "ratings-";
+  // private static final String PICTURES_ENVELOPE_PREFIX =
+  //   ENVELOPE_PREFIX + "pictures-";
+  // private static final String DISH_INDEX_ENVELOPE_NAME =
+  //   ENVELOPE_PREFIX + "dishes";
 
   private static final String OPEN_MENSA_API_ENDPOINT =
     "https://openmensa.org/api/v2";
@@ -562,31 +561,6 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
-  //old implementation using envelopes
-  // /**
-  //  * Retrieve all ratings for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of ratings.
-  //  */
-  // @GET
-  // @Path("/dishes/{dish}/ratings")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // public Response getRatings(@PathParam("dish") String dish)
-  //   throws EnvelopeOperationFailedException {
-  //   final long responseStart = System.currentTimeMillis();
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
-  //   HashMap<String, Rating> response = getRatingsForDish(dish);
-  //   Context
-  //     .get()
-  //     .monitorEvent(
-  //       MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-  //       String.valueOf(System.currentTimeMillis() - responseStart)
-  //     );
-  //   return Response.ok().entity(response).build();
-  // }
-
   /**
    * Retrieve all ratings for a dish.
    *
@@ -632,25 +606,6 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
-  //old implementation using envelopes
-  // /**
-  //  * Add a rating for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of ratings.
-  //  */
-  // @POST
-  // @Path("/dishes/{dish}/ratings")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // @RolesAllowed("authenticated")
-  // public Response addRating(@PathParam("dish") String dish, Rating rating)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
-  //   HashMap<String, Rating> response = storeRating(dish, rating);
-  //   return Response.ok().entity(response).build();
-  // }
-
   /**
    * Add a rating for a dish.
    *
@@ -695,24 +650,6 @@ public class MensaService extends RESTService {
     }
     return Response.ok().entity(response).build();
   }
-
-  // /**
-  //  * Delete a rating for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of ratings.
-  //  */
-  // @DELETE
-  // @Path("/dishes/{dish}/ratings")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // @RolesAllowed("authenticated")
-  // public Response deleteRating(@PathParam("dish") String dish)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5, dish);
-  //   HashMap<String, Rating> response = removeRating(dish);
-  //   return Response.ok().entity(response).build();
-  // }
 
   /**
    * Delete a rating for a dish.
@@ -761,7 +698,7 @@ public class MensaService extends RESTService {
     throws EnvelopeOperationFailedException {
     final long responseStart = System.currentTimeMillis();
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_6, dish);
-    HashMap<String, ArrayList<Picture>> response;
+
     Context
       .get()
       .monitorEvent(
@@ -784,30 +721,9 @@ public class MensaService extends RESTService {
   @RolesAllowed("authenticated")
   public Response addPicture(@PathParam("dish") String dish, Picture picture) {
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_7, dish);
-    Map<String, ArrayList<Picture>> response;
+
     return Response.ok().entity("response").build();
   }
-
-  // /**
-  //  * Delete a picture for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of pictures.
-  //  */
-  // @DELETE
-  // @Path("/dishes/{dish}/pictures")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // @RolesAllowed("authenticated")
-  // public Response deletePicture(
-  //   @PathParam("dish") String dish,
-  //   Picture picture
-  // )
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_8, dish);
-  //   Map<String, ArrayList<Picture>> response = removePicture(dish, picture);
-  //   return Response.ok().entity(response).build();
-  // }
 
   /**
    * Get a list of dishes that have been served in any mensa in the past.
@@ -844,132 +760,6 @@ public class MensaService extends RESTService {
       return false;
     }
   }
-
-  // private HashMap<String, Rating> getRatingsForDish(String dish)
-  //   throws EnvelopeOperationFailedException {
-  //   try {
-  //     Envelope env = getOrCreateRatingsEnvelopeForDish(dish);
-  //     return (HashMap<String, Rating>) env.getContent();
-  //   } catch (EnvelopeAccessDeniedException e) {
-  //     return new HashMap<>();
-  //   }
-  // }
-
-  // private HashMap<String, ArrayList<Picture>> getPicturesForDish(String dish)
-  //   throws EnvelopeOperationFailedException {
-  //   try {
-  //     Envelope env = getOrCreatePicturesEnvelopeForDish(dish);
-  //     return (HashMap<String, ArrayList<Picture>>) env.getContent();
-  //   } catch (EnvelopeAccessDeniedException e) {
-  //     return new HashMap<>();
-  //   }
-  // }
-
-  // private HashMap<String, Rating> storeRating(String dish, Rating rating)
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   rating.author = username;
-  //   rating.timestamp = getCurrentTimestamp();
-  //   Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
-  //   HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
-  //   ratings.put(username, rating);
-  //   envelope.setContent(ratings);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return ratings;
-  // }
-
-  // private HashMap<String, Rating> removeRating(String dish)
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
-  //   HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
-  //   ratings.remove(username);
-  //   envelope.setContent(ratings);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return ratings;
-  // }
-
-  // private Map<String, ArrayList<Picture>> storePicture(
-  //   String dish,
-  //   Picture picture
-  // )
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   picture.author = username;
-  //   Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
-  //   HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
-  //   if (!pictures.containsKey(username)) {
-  //     pictures.put(username, new ArrayList<>());
-  //   }
-  //   pictures.get(username).add(picture);
-  //   envelope.setContent(pictures);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return pictures;
-  // }
-
-  // private Map<String, ArrayList<Picture>> removePicture(
-  //   String dish,
-  //   Picture picture
-  // )
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
-  //   HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
-  //   pictures.get(username).remove(picture);
-  //   envelope.setContent(pictures);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return pictures;
-  // }
-
-  // private Envelope getOrCreateRatingsEnvelopeForDish(String dish)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   String envelopeName = RATINGS_ENVELOPE_PREFIX + dish;
-  //   return getOrCreateEnvelope(envelopeName, new HashMap<String, Rating>());
-  // }
-
-  // private Envelope getOrCreatePicturesEnvelopeForDish(String dish)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   String envelopeName = PICTURES_ENVELOPE_PREFIX + dish;
-  //   return getOrCreateEnvelope(
-  //     envelopeName,
-  //     new HashMap<String, ArrayList<Picture>>()
-  //   );
-  // }
-
-  // private Envelope getOrCreateDishIndexEnvelope()
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   return getOrCreateEnvelope(DISH_INDEX_ENVELOPE_NAME, new HashSet<>());
-  // }
-
-  // private Envelope getOrCreateEnvelope(
-  //   String name,
-  //   Serializable defaultContent
-  // )
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   try {
-  //     return Context.get().requestEnvelope(name);
-  //   } catch (EnvelopeNotFoundException e) {
-  //     Envelope envelope = Context
-  //       .get()
-  //       .createEnvelope(name, Context.get().getServiceAgent());
-  //     envelope.setContent(defaultContent);
-  //     envelope.setPublic();
-  //     Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //     return envelope;
-  //   }
-  // }
-
-  // private String getCurrentTimestamp() {
-  //   Date date = new Date(System.currentTimeMillis());
-  //   SimpleDateFormat sdf;
-  //   sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-  //   sdf.setTimeZone(TimeZone.getTimeZone("CET"));
-  //   return sdf.format(date);
-  // }
 
   private static class Rating implements Serializable {
 
@@ -1174,4 +964,211 @@ public class MensaService extends RESTService {
 
     return service.database.getDataSource().getConnection();
   }
+  //old implementation using envelopes
+  // /**
+  //  * Retrieve all ratings for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @GET
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // public Response getRatings(@PathParam("dish") String dish)
+  //   throws EnvelopeOperationFailedException {
+  //   final long responseStart = System.currentTimeMillis();
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
+  //   HashMap<String, Rating> response = getRatingsForDish(dish);
+  //   Context
+  //     .get()
+  //     .monitorEvent(
+  //       MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+  //       String.valueOf(System.currentTimeMillis() - responseStart)
+  //     );
+  //   return Response.ok().entity(response).build();
+  // }
+
+  // /**
+  //  * Add a rating for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @POST
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response addRating(@PathParam("dish") String dish, Rating rating)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
+  //   HashMap<String, Rating> response = storeRating(dish, rating);
+  //   return Response.ok().entity(response).build();
+  // }
+
+  // /**
+  //  * Delete a rating for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @DELETE
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response deleteRating(@PathParam("dish") String dish)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5, dish);
+  //   HashMap<String, Rating> response = removeRating(dish);
+  //   return Response.ok().entity(response).build();
+  // }
+
+  // /**
+  //  * Delete a picture for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of pictures.
+  //  */
+  // @DELETE
+  // @Path("/dishes/{dish}/pictures")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response deletePicture(
+  //   @PathParam("dish") String dish,
+  //   Picture picture
+  // )
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_8, dish);
+  //   Map<String, ArrayList<Picture>> response = removePicture(dish, picture);
+  //   return Response.ok().entity(response).build();
+  // }
+
+  // private HashMap<String, Rating> getRatingsForDish(String dish)
+  //   throws EnvelopeOperationFailedException {
+  //   try {
+  //     Envelope env = getOrCreateRatingsEnvelopeForDish(dish);
+  //     return (HashMap<String, Rating>) env.getContent();
+  //   } catch (EnvelopeAccessDeniedException e) {
+  //     return new HashMap<>();
+  //   }
+  // }
+
+  // private HashMap<String, ArrayList<Picture>> getPicturesForDish(String dish)
+  //   throws EnvelopeOperationFailedException {
+  //   try {
+  //     Envelope env = getOrCreatePicturesEnvelopeForDish(dish);
+  //     return (HashMap<String, ArrayList<Picture>>) env.getContent();
+  //   } catch (EnvelopeAccessDeniedException e) {
+  //     return new HashMap<>();
+  //   }
+  // }
+
+  // private HashMap<String, Rating> storeRating(String dish, Rating rating)
+  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+  //   String username = userAgent.getLoginName();
+  //   rating.author = username;
+  //   rating.timestamp = getCurrentTimestamp();
+  //   Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
+  //   HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
+  //   ratings.put(username, rating);
+  //   envelope.setContent(ratings);
+  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+  //   return ratings;
+  // }
+
+  // private HashMap<String, Rating> removeRating(String dish)
+  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+  //   String username = userAgent.getLoginName();
+  //   Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
+  //   HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
+  //   ratings.remove(username);
+  //   envelope.setContent(ratings);
+  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+  //   return ratings;
+  // }
+
+  // private Map<String, ArrayList<Picture>> storePicture(
+  //   String dish,
+  //   Picture picture
+  // )
+  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+  //   String username = userAgent.getLoginName();
+  //   picture.author = username;
+  //   Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
+  //   HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
+  //   if (!pictures.containsKey(username)) {
+  //     pictures.put(username, new ArrayList<>());
+  //   }
+  //   pictures.get(username).add(picture);
+  //   envelope.setContent(pictures);
+  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+  //   return pictures;
+  // }
+
+  // private Map<String, ArrayList<Picture>> removePicture(
+  //   String dish,
+  //   Picture picture
+  // )
+  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+  //   String username = userAgent.getLoginName();
+  //   Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
+  //   HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
+  //   pictures.get(username).remove(picture);
+  //   envelope.setContent(pictures);
+  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+  //   return pictures;
+  // }
+
+  // private Envelope getOrCreateRatingsEnvelopeForDish(String dish)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   String envelopeName = RATINGS_ENVELOPE_PREFIX + dish;
+  //   return getOrCreateEnvelope(envelopeName, new HashMap<String, Rating>());
+  // }
+
+  // private Envelope getOrCreatePicturesEnvelopeForDish(String dish)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   String envelopeName = PICTURES_ENVELOPE_PREFIX + dish;
+  //   return getOrCreateEnvelope(
+  //     envelopeName,
+  //     new HashMap<String, ArrayList<Picture>>()
+  //   );
+  // }
+
+  // private Envelope getOrCreateDishIndexEnvelope()
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   return getOrCreateEnvelope(DISH_INDEX_ENVELOPE_NAME, new HashSet<>());
+  // }
+
+  // private Envelope getOrCreateEnvelope(
+  //   String name,
+  //   Serializable defaultContent
+  // )
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   try {
+  //     return Context.get().requestEnvelope(name);
+  //   } catch (EnvelopeNotFoundException e) {
+  //     Envelope envelope = Context
+  //       .get()
+  //       .createEnvelope(name, Context.get().getServiceAgent());
+  //     envelope.setContent(defaultContent);
+  //     envelope.setPublic();
+  //     Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+  //     return envelope;
+  //   }
+  // }
+
+  // private String getCurrentTimestamp() {
+  //   Date date = new Date(System.currentTimeMillis());
+  //   SimpleDateFormat sdf;
+  //   sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+  //   sdf.setTimeZone(TimeZone.getTimeZone("CET"));
+  //   return sdf.format(date);
+  // }
 }
