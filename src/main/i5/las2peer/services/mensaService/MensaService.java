@@ -271,12 +271,11 @@ public class MensaService extends RESTService {
   }
 
   private ResultSet findMensasByName(String mensaName) {
-    MensaService service = (MensaService) Context.get().getService();
     Connection dbConnection = null;
     PreparedStatement statement = null;
     ResultSet res;
     try {
-      dbConnection = service.database.getDataSource().getConnection();
+      dbConnection = getDatabaseConnection();
       statement =
         dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
       statement.setString(1, "%" + mensaName + "%");
@@ -612,7 +611,6 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response getRatings(@PathParam("dish") String dish) {
-    MensaService service = (MensaService) Context.get().getService();
     Object response = null;
     final long responseStart = System.currentTimeMillis();
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
@@ -620,7 +618,7 @@ public class MensaService extends RESTService {
     try { //get Ratings from distributed storage
       JSONArray reviews = new JSONArray();
       JSONObject review;
-      Connection con = service.database.getDataSource().getConnection();
+      Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
         "SELECT * FROM reviews LEFT JOIN (dishes,mensas) ON (reviews.dishid =dishes.id AND mensas.id=reviews.mensaId) WHERE dishes.name=?"
       );
@@ -647,6 +645,25 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
+  //old implementation using envelopes
+  // /**
+  //  * Add a rating for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @POST
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response addRating(@PathParam("dish") String dish, Rating rating)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
+  //   HashMap<String, Rating> response = storeRating(dish, rating);
+  //   return Response.ok().entity(response).build();
+  // }
+
   /**
    * Add a rating for a dish.
    *
@@ -661,7 +678,31 @@ public class MensaService extends RESTService {
   public Response addRating(@PathParam("dish") String dish, Rating rating)
     throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
-    HashMap<String, Rating> response = storeRating(dish, rating);
+    Object response = null;
+    try {
+      Connection con = getDatabaseConnection();
+      PreparedStatement s = con.prepareStatement(
+        "SELECT (id) FROM dishes WHERE name=?"
+      );
+      s.setString(1, dish);
+      ResultSet res = s.executeQuery();
+      if (!res.next()) {
+        return Response.ok().entity("dish not found in  db").build();
+      }
+      int dishId = res.getInt("id");
+      s = con.prepareStatement("INSERT INTO reviews VALUES (?,?,?,?,?,?)");
+      s.setString(1, rating.authorId);
+      s.setInt(2, rating.mensaId);
+      s.setInt(3, dishId);
+      s.setDate(4, new java.sql.Date(new Date().getTime()));
+      s.setInt(5, rating.stars);
+      s.setString(6, rating.comment);
+      s.executeUpdate();
+      response = rating;
+    } catch (Exception e) {
+      e.printStackTrace();
+      response = e.getMessage();
+    }
     return Response.ok().entity(response).build();
   }
 
@@ -757,9 +798,9 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response getDishes() throws EnvelopeOperationFailedException {
     JSONArray dishes = new JSONArray();
-    MensaService service = (MensaService) Context.get().getService();
+
     try {
-      Connection con = service.database.getDataSource().getConnection();
+      Connection con = getDatabaseConnection();
       ResultSet res = con
         .prepareStatement("SELECT DISTINCT (name) FROM dishes")
         .executeQuery();
@@ -923,7 +964,7 @@ public class MensaService extends RESTService {
     try {
       JSONArray menu = getMensaMenu(mensaId);
       MensaService service = (MensaService) Context.get().getService();
-      Connection con = service.database.getDataSource().getConnection();
+      Connection con = getDatabaseConnection();
       menu.forEach(
         menuitem -> {
           try {
@@ -1014,7 +1055,6 @@ public class MensaService extends RESTService {
     }
     lastMensasUpdate = new Date();
     System.out.println("Updating mensas...");
-    MensaService service = (MensaService) Context.get().getService();
     JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
     Connection dbConnection = null;
     String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
@@ -1023,7 +1063,7 @@ public class MensaService extends RESTService {
     Integer totalPages = 0;
 
     try {
-      dbConnection = service.database.getDataSource().getConnection();
+      dbConnection = getDatabaseConnection();
       URL url = new URL(urlString);
       URLConnection con = url.openConnection();
       InputStream in = con.getInputStream();
@@ -1102,5 +1142,11 @@ public class MensaService extends RESTService {
     int updated = statement.executeUpdate();
     statement.close();
     return updated;
+  }
+
+  private Connection getDatabaseConnection() throws SQLException {
+    MensaService service = (MensaService) Context.get().getService();
+
+    return service.database.getDataSource().getConnection();
   }
 }
