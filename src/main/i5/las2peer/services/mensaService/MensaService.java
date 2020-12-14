@@ -407,7 +407,7 @@ public class MensaService extends RESTService {
         name +
         ".\n The mensa is probably closed on " +
         weekday +
-        ", or no menu has been published yet.😔"
+        ", or no menu has been published yet 😔"
       );
     }
   }
@@ -720,7 +720,13 @@ public class MensaService extends RESTService {
   }
 
   private boolean isMensaSupported(String mensa) {
-    return SUPPORTED_MENSAS.contains(mensa);
+    try {
+      ResultSet res = findMensasByName(mensa);
+      return res.next(); //true if at least one entry matches the input
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
+    }
   }
 
   private HashMap<String, Rating> getRatingsForDish(String dish)
@@ -740,15 +746,6 @@ public class MensaService extends RESTService {
       return (HashMap<String, ArrayList<Picture>>) env.getContent();
     } catch (EnvelopeAccessDeniedException e) {
       return new HashMap<>();
-    }
-  }
-
-  private Set<String> getDishIndex() throws EnvelopeOperationFailedException {
-    try {
-      Envelope env = getOrCreateDishIndexEnvelope();
-      return (Set<String>) env.getContent();
-    } catch (EnvelopeAccessDeniedException e) {
-      return new HashSet<>();
     }
   }
 
@@ -859,16 +856,16 @@ public class MensaService extends RESTService {
   }
 
   private void saveDishesToIndex(int mensaId) {
-    System.out.println("Saving dishes to index...");
     Date lastUpdate = this.lastDishUpdate.get(mensaId);
+    System.out.println("Last dish update: " + lastUpdate);
     if (
       lastUpdate != null &&
       Math.abs(lastUpdate.getTime() - new Date().getTime()) < SIX_HOURS_IN_MS
     ) {
-      System.out.println("no need to update dishes");
+      System.out.println("No need to update dishes");
       return;
     }
-
+    System.out.println("Saving dishes to index...");
     lastDishUpdate.put(mensaId, new Date());
     try {
       JSONArray menu = getMensaMenu(mensaId);
@@ -877,7 +874,7 @@ public class MensaService extends RESTService {
       menu.forEach(
         menuitem -> {
           try {
-            addOrUpdateDishEntry((JSONObject) menuitem, con, mensaId);
+            addDishEntry((JSONObject) menuitem, con, mensaId);
           } catch (SQLException e) {
             e.printStackTrace();
           }
@@ -1001,7 +998,7 @@ public class MensaService extends RESTService {
           updates += addOrUpdateMensaEntry((JSONObject) mensa, dbConnection);
         }
       }
-      System.out.println(updates + " entries modified in total");
+      System.out.println(updates + " entries modified");
     } catch (IOException | ParseException | SQLException e) {
       e.printStackTrace();
     } finally {
@@ -1039,13 +1036,14 @@ public class MensaService extends RESTService {
    * @param mensaId the id of the mensa at which the dish is served
    * @return number of updates
    */
-  private int addOrUpdateDishEntry(JSONObject obj, Connection con, int mensaId)
+  private int addDishEntry(JSONObject obj, Connection con, int mensaId)
     throws SQLException {
     PreparedStatement statement = con.prepareStatement(
-      "REPLACE INTO dishes VALUES(?,?,?,?)"
+      "INSERT IGNORE INTO dishes VALUES  (?,?,?,?)"
     );
     statement.setInt(1, Integer.parseInt(obj.getAsString("id")));
     statement.setInt(2, mensaId);
+
     statement.setString(3, obj.getAsString("name"));
     statement.setString(4, obj.getAsString("category"));
     int updated = statement.executeUpdate();
