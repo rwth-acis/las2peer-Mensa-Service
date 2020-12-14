@@ -289,6 +289,7 @@ public class MensaService extends RESTService {
   }
 
   // hard coded IDs of mensas in Aachen
+  // for old mensa function
   private int getMensaId(String mensaName) {
     switch (mensaName) {
       case "vita":
@@ -511,11 +512,11 @@ public class MensaService extends RESTService {
       JSONObject menuItem = (JSONObject) o;
       String type = menuItem.getAsString("category");
       String dish = menuItem.getAsString("name");
-      if (type.equals("Tellergericht")) {
+      if (type.equals("Tellergericht") || type.contains("Entrée")) {
         returnString += "🍽 " + type + ": " + dish + "\n";
-      } else if (type.equals("Vegetarisch")) {
+      } else if (type.equals("Vegetarisch") || type.contains("Végétarien")) {
         returnString += "🥗 " + type + ": " + dish + "\n";
-      } else if (type.equals("Klassiker")) {
+      } else if (type.equals("Klassiker") || type.contains("Protidique")) {
         returnString += "👨🏻‍🍳 " + type + ": " + dish + "\n";
       } else if (type.equals("Empfehlung des Tages")) {
         returnString += "👌🏿👨🏿‍🍳 " + type + ": " + dish + "\n";
