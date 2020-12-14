@@ -576,6 +576,31 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
+  //old implementation using envelopes
+  // /**
+  //  * Retrieve all ratings for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @GET
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // public Response getRatings(@PathParam("dish") String dish)
+  //   throws EnvelopeOperationFailedException {
+  //   final long responseStart = System.currentTimeMillis();
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
+  //   HashMap<String, Rating> response = getRatingsForDish(dish);
+  //   Context
+  //     .get()
+  //     .monitorEvent(
+  //       MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+  //       String.valueOf(System.currentTimeMillis() - responseStart)
+  //     );
+  //   return Response.ok().entity(response).build();
+  // }
+
   /**
    * Retrieve all ratings for a dish.
    *
@@ -586,17 +611,39 @@ public class MensaService extends RESTService {
   @Path("/dishes/{dish}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getRatings(@PathParam("dish") String dish)
-    throws EnvelopeOperationFailedException {
+  public Response getRatings(@PathParam("dish") String dish) {
+    MensaService service = (MensaService) Context.get().getService();
+    Object response = null;
     final long responseStart = System.currentTimeMillis();
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
-    HashMap<String, Rating> response = getRatingsForDish(dish);
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-        String.valueOf(System.currentTimeMillis() - responseStart)
+
+    try { //get Ratings from distributed storage
+      JSONArray reviews = new JSONArray();
+      JSONObject review;
+      Connection con = service.database.getDataSource().getConnection();
+      PreparedStatement s = con.prepareStatement(
+        "SELECT * FROM reviews LEFT JOIN (dishes,mensas) ON (reviews.dishid =dishes.id AND mensas.id=reviews.mensaId) WHERE dishes.name=?"
       );
+      s.setString(1, dish);
+      ResultSet res = s.executeQuery();
+      while (res.next()) {
+        review = new JSONObject();
+        review.put("mensa", res.getString("name"));
+        review.put("stars", res.getString("stars"));
+        review.put("comment", res.getString("comment"));
+        reviews.add(review);
+      }
+      response = reviews;
+      Context
+        .get()
+        .monitorEvent(
+          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+          String.valueOf(System.currentTimeMillis() - responseStart)
+        );
+    } catch (SQLException e) {
+      e.printStackTrace();
+      response = e.getMessage();
+    }
     return Response.ok().entity(response).build();
   }
 

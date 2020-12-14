@@ -5,8 +5,8 @@ CREATE TABLE `reviews`
         (255) CHARACTER
         SET utf8
         COLLATE utf8_general_ci NOT NULL,
-    `mensaId` int (12) NOT NULL,
-    `dishId` int (12) NOT NULL,
+    `mensaId` int (12) NOT NULL REFERENCES mensas(`id`),
+    `dishId` int (12) NOT NULL REFERENCES dishes(`id`),
 
     `timestamp` timestamp,
     `stars` int (12) NOT NULL,
