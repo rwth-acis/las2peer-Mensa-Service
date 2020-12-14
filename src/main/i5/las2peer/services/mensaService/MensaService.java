@@ -214,73 +214,6 @@ public class MensaService extends RESTService {
     return descriptions;
   }
 
-  public JSONArray getMensaMenu(int mensaID) throws IOException {
-    JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
-    String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
-    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-    Calendar cal = Calendar.getInstance();
-    int weekday = cal.get(Calendar.DAY_OF_WEEK);
-    String day;
-    JSONArray menu = new JSONArray();
-
-    if (weekday == 1) { // Sunday
-      Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
-      day = dateFormat.format(monday);
-    } else if (weekday == 7) { // Saturday
-      Date sunday = new Date(new Date().getTime() + 2 * ONE_DAY_IN_MS);
-      day = dateFormat.format(sunday);
-    } else {
-      day = dateFormat.format(new Date());
-    }
-
-    urlString += mensaID + "/days/" + day + "/meals";
-
-    try {
-      URL url = new URL(urlString);
-      URLConnection con = url.openConnection();
-      con.addRequestProperty("Content-type", "application/json");
-      menu = (JSONArray) jsonParser.parse(con.getInputStream());
-    } catch (ParseException e) {
-      e.printStackTrace();
-    } catch (IOException e) {
-      System.out.println("Error on URL Connection to OpenMensa API");
-      throw e;
-    }
-    return menu;
-  }
-
-  private ResultSet findMensasByName(String mensaName) {
-    Connection dbConnection = null;
-    PreparedStatement statement = null;
-    ResultSet res;
-    try {
-      dbConnection = getDatabaseConnection();
-      statement =
-        dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
-      statement.setString(1, "%" + mensaName + "%");
-      res = statement.executeQuery();
-      return res;
-    } catch (Exception e) {
-      e.printStackTrace();
-      return null;
-    }
-  }
-
-  // hard coded IDs of mensas in Aachen
-  // for old mensa function
-  private int getMensaId(String mensaName) {
-    switch (mensaName) {
-      case "vita":
-        return 96;
-      case "ahornstrasse":
-        return 95;
-      case "academica":
-        return 187;
-      default:
-        return -1;
-    }
-  }
-
   /**
    * This method returns the current menu of supported canteens.
    *
@@ -292,14 +225,14 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.TEXT_HTML)
   @Produces(MediaType.APPLICATION_JSON)
   @ApiOperation(
-    value = "REPLACE THIS WITH AN APPROPRIATE FUNCTION NAME",
-    notes = "REPLACE THIS WITH YOUR NOTES TO THE FUNCTION"
+    value = "Get the menu of a mensa",
+    notes = "The mensa needs to be supported by the OpenMensa API"
   )
   @ApiResponses(
     value = {
       @ApiResponse(
         code = HttpURLConnection.HTTP_OK,
-        message = "REPLACE THIS WITH YOUR OK MESSAGE"
+        message = "The call was successfull"
       ),
     }
   )
@@ -359,40 +292,8 @@ public class MensaService extends RESTService {
     }
   }
 
-  /**Gets the menu for the mensa and formats it as a string which can be presented in chat
-   * @param name The name of the mensa
-   * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
-   */
-  private String createMenuChatResponse(String name, int id)
-    throws SQLException, ChatException {
-    String MESSAGE_HEAD = "";
-    String weekday = new SimpleDateFormat("EEEE").format(new Date());
-
-    if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
-      MESSAGE_HEAD +=
-        "Please note that the mensa is closed on week-ends. This is the menu for Monday\n";
-      weekday = "Monday";
-    }
-    MESSAGE_HEAD +=
-      "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
-
-    try {
-      JSONArray mensaMenu = getMensaMenu(id);
-      String returnString = convertToHtml(mensaMenu);
-      return MESSAGE_HEAD + returnString;
-    } catch (IOException e) {
-      throw new ChatException(
-        "Could not get the menu for mensa " +
-        name +
-        ".\n The mensa is probably closed on " +
-        weekday +
-        ", or no menu has been published yet 😔"
-      );
-    }
-  }
-
   /**
-   * This method returns the current menu of a canteen.
+   * This method returns the current menu of a canteen. This method only work for mensa academica, ahorn and vita in Aachen
    *
    * @param mensa    A canteen of the RWTH.
    * @param language The user's language.
@@ -480,46 +381,6 @@ public class MensaService extends RESTService {
         String.valueOf(System.currentTimeMillis() - responseStart)
       );
     return Response.ok().type(responseContentType).entity(returnString).build();
-  }
-
-  private String convertToHtml(JSONArray mensaMenu) {
-    String returnString = "";
-    JSONArray menus = mensaMenu;
-
-    for (Object o : menus) {
-      JSONObject menuItem = (JSONObject) o;
-      String type = menuItem.getAsString("category");
-      String dish = menuItem.getAsString("name");
-      if (type.equals("Tellergericht") || type.contains("Entrée")) {
-        returnString += "🍽 " + type + ": " + dish + "\n";
-      } else if (type.equals("Vegetarisch") || type.contains("Végétarien")) {
-        returnString += "🥗 " + type + ": " + dish + "\n";
-      } else if (type.equals("Klassiker") || type.contains("Protidique")) {
-        returnString += "👨🏻‍🍳 " + type + ": " + dish + "\n";
-      } else if (type.equals("Empfehlung des Tages")) {
-        returnString += "👌🏿👨🏿‍🍳 " + type + ": " + dish + "\n";
-      } else if (type.equals("Wok")) {
-        returnString += "🥘 " + type + ": " + dish + "\n";
-      } else if (type.equals("Ofenkartoffel")) {
-        returnString += "🥔 " + type + ": " + dish + "\n";
-      } else if (type.equals("Pasta")) {
-        returnString += "🍝 " + type + ": " + dish + "\n";
-      } else if (type.contains("Pizza")) {
-        returnString += "🍕 " + type + ": " + dish + "\n";
-      } else if (type.contains("Grill")) {
-        returnString += "🥩 " + type + ": " + dish + "\n";
-      } else if (type.contains("Burger")) {
-        returnString += "🍔 " + type + ": " + dish + "\n";
-      } else if (type.contains("Sandwich")) {
-        returnString += "🥪 " + type + ": " + dish + "\n";
-      } else if (type.contains("Flammengrill")) {
-        returnString += "🔥 " + type + ": " + dish + "\n";
-      } else {
-        returnString += type + ": " + dish + "\n";
-      }
-    }
-    returnString += "___\n";
-    return returnString;
   }
 
   /**
@@ -754,63 +615,142 @@ public class MensaService extends RESTService {
     }
   }
 
-  private static class Rating implements Serializable {
+  /**Gets the menu for the mensa and formats it as a string which can be presented in chat
+   * @param name The name of the mensa
+   * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
+   */
+  private String createMenuChatResponse(String name, int id)
+    throws SQLException, ChatException {
+    String MESSAGE_HEAD = "";
+    String weekday = new SimpleDateFormat("EEEE").format(new Date());
 
-    public String author;
-    public int stars;
-    public String comment;
-    public int mensaId;
-    public String timestamp;
+    if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
+      MESSAGE_HEAD +=
+        "Please note that the mensa is closed on week-ends. This is the menu for Monday\n";
+      weekday = "Monday";
+    }
+    MESSAGE_HEAD +=
+      "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
 
-    Rating() {}
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      Rating rating = (Rating) o;
-      return (
-        stars == rating.stars &&
-        author.equals(rating.author) &&
-        Objects.equals(comment, rating.comment) &&
-        mensaId == rating.mensaId &&
-        timestamp.equals(rating.timestamp)
+    try {
+      JSONArray mensaMenu = getMensaMenu(id);
+      String returnString = convertToHtml(mensaMenu);
+      return MESSAGE_HEAD + returnString;
+    } catch (IOException e) {
+      throw new ChatException(
+        "Could not get the menu for mensa " +
+        name +
+        ".\n The mensa is probably closed on " +
+        weekday +
+        ", or no menu has been published yet 😔"
       );
     }
+  }
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(author, stars, comment, mensaId, timestamp);
+  /**
+   * Looks up all mensas which match a given name
+   * @param mensaName name of the mensa
+   * @return the set of mensas which match the mensa name
+   */
+  private ResultSet findMensasByName(String mensaName) {
+    Connection dbConnection = null;
+    PreparedStatement statement = null;
+    ResultSet res;
+    try {
+      dbConnection = getDatabaseConnection();
+      statement =
+        dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
+      statement.setString(1, "%" + mensaName + "%");
+      res = statement.executeQuery();
+      return res;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
   }
 
-  private static class Picture implements Serializable {
+  /**
+   * Gets the menu for a given mensa
+   * @param mensaID id of the mensa in the OpenMensa API
+   * @return the menu of the mensa for that day, or Monday if the given day is on a weekend
+   * @throws IOException
+   */
+  public JSONArray getMensaMenu(int mensaID) throws IOException {
+    JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+    String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    Calendar cal = Calendar.getInstance();
+    int weekday = cal.get(Calendar.DAY_OF_WEEK);
+    String day;
+    JSONArray menu = new JSONArray();
 
-    public String image;
-    public String author;
-
-    Picture() {}
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      Picture picture = (Picture) o;
-      return image.equals(picture.image) && author.equals(picture.author);
+    if (weekday == 1) { // Sunday
+      Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
+      day = dateFormat.format(monday);
+    } else if (weekday == 7) { // Saturday
+      Date sunday = new Date(new Date().getTime() + 2 * ONE_DAY_IN_MS);
+      day = dateFormat.format(sunday);
+    } else {
+      day = dateFormat.format(new Date());
     }
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(image, author);
+    urlString += mensaID + "/days/" + day + "/meals";
+
+    try {
+      URL url = new URL(urlString);
+      URLConnection con = url.openConnection();
+      con.addRequestProperty("Content-type", "application/json");
+      menu = (JSONArray) jsonParser.parse(con.getInputStream());
+    } catch (ParseException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      System.out.println("Error on URL Connection to OpenMensa API");
+      throw e;
     }
+    return menu;
   }
 
-  /** Exceptions ,with messages, that should be returned in Chat */
-  protected static class ChatException extends Exception {
+  /**Formats a given menu into a text string
+   * @param  mensaMenu the menu to convert into a string
+   */
+  private String convertToHtml(JSONArray mensaMenu) {
+    String returnString = "";
+    JSONArray menus = mensaMenu;
 
-    protected ChatException(String message) {
-      super(message);
+    for (Object o : menus) {
+      JSONObject menuItem = (JSONObject) o;
+      String type = menuItem.getAsString("category");
+      String dish = menuItem.getAsString("name");
+      if (type.equals("Tellergericht") || type.contains("Entrée")) {
+        returnString += "🍽 " + type + ": " + dish + "\n";
+      } else if (type.equals("Vegetarisch") || type.contains("Végétarien")) {
+        returnString += "🥗 " + type + ": " + dish + "\n";
+      } else if (type.equals("Klassiker") || type.contains("Protidique")) {
+        returnString += "👨🏻‍🍳 " + type + ": " + dish + "\n";
+      } else if (type.equals("Empfehlung des Tages")) {
+        returnString += "👌🏿👨🏿‍🍳 " + type + ": " + dish + "\n";
+      } else if (type.equals("Wok")) {
+        returnString += "🥘 " + type + ": " + dish + "\n";
+      } else if (type.equals("Ofenkartoffel")) {
+        returnString += "🥔 " + type + ": " + dish + "\n";
+      } else if (type.equals("Pasta")) {
+        returnString += "🍝 " + type + ": " + dish + "\n";
+      } else if (type.contains("Pizza")) {
+        returnString += "🍕 " + type + ": " + dish + "\n";
+      } else if (type.contains("Grill")) {
+        returnString += "🥩 " + type + ": " + dish + "\n";
+      } else if (type.contains("Burger")) {
+        returnString += "🍔 " + type + ": " + dish + "\n";
+      } else if (type.contains("Sandwich")) {
+        returnString += "🥪 " + type + ": " + dish + "\n";
+      } else if (type.contains("Flammengrill")) {
+        returnString += "🔥 " + type + ": " + dish + "\n";
+      } else {
+        returnString += type + ": " + dish + "\n";
+      }
     }
+    returnString += "___\n";
+    return returnString;
   }
 
   /**Saves the dishes for a  menu from a given mensa in the datbase
@@ -956,6 +896,80 @@ public class MensaService extends RESTService {
     MensaService service = (MensaService) Context.get().getService();
 
     return service.database.getDataSource().getConnection();
+  }
+
+  // hard coded IDs of mensas in Aachen
+  // for old mensa function
+  private int getMensaId(String mensaName) {
+    switch (mensaName) {
+      case "vita":
+        return 96;
+      case "ahornstrasse":
+        return 95;
+      case "academica":
+        return 187;
+      default:
+        return -1;
+    }
+  }
+
+  /** Exceptions ,with messages, that should be returned in Chat */
+  protected static class ChatException extends Exception {
+
+    protected ChatException(String message) {
+      super(message);
+    }
+  }
+
+  private static class Rating implements Serializable {
+
+    public String author;
+    public int stars;
+    public String comment;
+    public int mensaId;
+    public String timestamp;
+
+    Rating() {}
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Rating rating = (Rating) o;
+      return (
+        stars == rating.stars &&
+        author.equals(rating.author) &&
+        Objects.equals(comment, rating.comment) &&
+        mensaId == rating.mensaId &&
+        timestamp.equals(rating.timestamp)
+      );
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(author, stars, comment, mensaId, timestamp);
+    }
+  }
+
+  private static class Picture implements Serializable {
+
+    public String image;
+    public String author;
+
+    Picture() {}
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Picture picture = (Picture) o;
+      return image.equals(picture.image) && author.equals(picture.author);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(image, author);
+    }
   }
   //old implementation using envelopes
 
