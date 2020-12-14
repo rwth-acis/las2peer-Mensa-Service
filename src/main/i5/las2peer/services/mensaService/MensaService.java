@@ -65,7 +65,7 @@ import net.minidev.json.parser.ParseException;
   info = @Info(
     title = "las2peer Mensa Service",
     version = "1.0.2",
-    description = "A las2peer Mensa Service for the RWTH canteen.",
+    description = "A las2peer Mensa Service for  canteens supported by the OpenMensa API (https://openmensa.org/api/v2).",
     contact = @Contact(
       name = "Alexander Tobias Neumann",
       url = "https://las2peer.org",
@@ -83,18 +83,6 @@ public class MensaService extends RESTService {
 
   private static final long SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000L;
   private static final long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000L;
-  // private static final List<String> SUPPORTED_MENSAS = Arrays.asList(
-  //   "vita",
-  //   "academica",
-  //   "ahornstrasse"
-  // );
-  // private static final String ENVELOPE_PREFIX = "mensa-";
-  // private static final String RATINGS_ENVELOPE_PREFIX =
-  //   ENVELOPE_PREFIX + "ratings-";
-  // private static final String PICTURES_ENVELOPE_PREFIX =
-  //   ENVELOPE_PREFIX + "pictures-";
-  // private static final String DISH_INDEX_ENVELOPE_NAME =
-  //   ENVELOPE_PREFIX + "dishes";
 
   private static final String OPEN_MENSA_API_ENDPOINT =
     "https://openmensa.org/api/v2";
@@ -110,6 +98,19 @@ public class MensaService extends RESTService {
   private String databaseUser;
   private String databasePassword;
   private SQLDatabase database; // The database instance to write to.
+
+  // private static final List<String> SUPPORTED_MENSAS = Arrays.asList(
+  //   "vita",
+  //   "academica",
+  //   "ahornstrasse"
+  // );
+  // private static final String ENVELOPE_PREFIX = "mensa-";
+  // private static final String RATINGS_ENVELOPE_PREFIX =
+  //   ENVELOPE_PREFIX + "ratings-";
+  // private static final String PICTURES_ENVELOPE_PREFIX =
+  //   ENVELOPE_PREFIX + "pictures-";
+  // private static final String DISH_INDEX_ENVELOPE_NAME =
+  //   ENVELOPE_PREFIX + "dishes";
 
   public MensaService() {
     super();
@@ -134,14 +135,6 @@ public class MensaService extends RESTService {
       e.printStackTrace();
       System.out.println("Failed to connect to Database: " + e.getMessage());
     }
-  }
-
-  public static int ordinalIndexOf(String str, String substr, int n) {
-    int pos = -1;
-    do {
-      pos = str.indexOf(substr, pos + 1);
-    } while (n-- > 0 && pos != -1);
-    return pos;
   }
 
   @Override
@@ -965,6 +958,15 @@ public class MensaService extends RESTService {
     return service.database.getDataSource().getConnection();
   }
   //old implementation using envelopes
+
+  // public static int ordinalIndexOf(String str, String substr, int n) {
+  //   int pos = -1;
+  //   do {
+  //     pos = str.indexOf(substr, pos + 1);
+  //   } while (n-- > 0 && pos != -1);
+  //   return pos;
+  // }
+
   // /**
   //  * Retrieve all ratings for a dish.
   //  *
