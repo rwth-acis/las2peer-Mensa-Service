@@ -470,6 +470,11 @@ public class MensaService extends RESTService {
         returnString = mensaMenu.toString();
       }
       saveDishesToIndex(mensaID);
+    } catch (IOException e) {
+      return Response
+        .status(Status.CONFLICT)
+        .entity("Could not get the menu for mensa ")
+        .build();
     } catch (Exception e) {
       return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
     }
@@ -753,7 +758,7 @@ public class MensaService extends RESTService {
     throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
     UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
     String username = userAgent.getLoginName();
-    rating.author = username;
+    rating.authorId = username;
     rating.timestamp = getCurrentTimestamp();
     Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
     HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
@@ -888,10 +893,10 @@ public class MensaService extends RESTService {
 
   private static class Rating implements Serializable {
 
-    public String author;
+    public String authorId;
     public int stars;
     public String comment;
-    public String mensa;
+    public int mensaId;
     public String timestamp;
 
     Rating() {}
@@ -903,16 +908,16 @@ public class MensaService extends RESTService {
       Rating rating = (Rating) o;
       return (
         stars == rating.stars &&
-        author.equals(rating.author) &&
+        authorId.equals(rating.authorId) &&
         Objects.equals(comment, rating.comment) &&
-        mensa.equals(rating.mensa) &&
+        mensaId == rating.mensaId &&
         timestamp.equals(rating.timestamp)
       );
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(author, stars, comment, mensa, timestamp);
+      return Objects.hash(authorId, stars, comment, mensaId, timestamp);
     }
   }
 
