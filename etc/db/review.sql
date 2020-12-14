@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS `reviews`;
 CREATE TABLE `reviews`
-(
-    `authorId` varchar
+(   `id` int(12) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    `author` varchar
         (255) CHARACTER
         SET utf8
         COLLATE utf8_general_ci NOT NULL,
@@ -14,8 +14,6 @@ CREATE TABLE `reviews`
         (255) CHARACTER
         SET utf8
         COLLATE utf8_general_ci ,
-  
-    PRIMARY KEY (`authorId`,`mensaId`,`dishId`) USING BTREE,
     FOREIGN KEY (`mensaId`) REFERENCES mensas(`id`),
     FOREIGN KEY (`dishId`) REFERENCES dishes(`id`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
