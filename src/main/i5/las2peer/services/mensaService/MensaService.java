@@ -30,7 +30,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -695,6 +694,7 @@ public class MensaService extends RESTService {
       s.setInt(5, rating.stars);
       s.setString(6, rating.comment);
       s.executeUpdate();
+      s.close();
       response = rating;
     } catch (Exception e) {
       e.printStackTrace();
@@ -732,11 +732,27 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response deleteRating(@PathParam("dish") String dish)
+  public Response deleteRating(@PathParam("dish") int dishId)
     throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5, dish);
-    HashMap<String, Rating> response = removeRating(dish);
-    return Response.ok().entity(response).build();
+    Context
+      .get()
+      .monitorEvent(
+        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5,
+        String.valueOf(dishId)
+      );
+    try {
+      Connection con = getDatabaseConnection();
+      PreparedStatement s = con.prepareStatement(
+        "DELETE FROM reviews WHERE id=?"
+      );
+      s.setInt(1, dishId);
+      s.executeUpdate();
+      s.close();
+      return Response.ok().build();
+    } catch (SQLException e) {
+      e.printStackTrace();
+      return Response.ok().entity(e.getMessage()).build();
+    }
   }
 
   /**
