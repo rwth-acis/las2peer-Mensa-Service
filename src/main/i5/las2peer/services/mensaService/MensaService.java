@@ -1,6 +1,5 @@
 package i5.las2peer.services.mensaService;
 
-import com.fasterxml.jackson.databind.deser.std.DateDeserializers.SqlDateDeserializer;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
@@ -35,16 +34,12 @@ import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TimeZone;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
@@ -61,7 +56,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Response.StatusType;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -97,11 +91,11 @@ public class MensaService extends RESTService {
 
   private static final long SIX_HOURS_IN_MS = 6 * 60 * 60 * 1000L;
   private static final long ONE_DAY_IN_MS = 24 * 60 * 60 * 1000L;
-  private static final List<String> SUPPORTED_MENSAS = Arrays.asList(
-    "vita",
-    "academica",
-    "ahornstrasse"
-  );
+  // private static final List<String> SUPPORTED_MENSAS = Arrays.asList(
+  //   "vita",
+  //   "academica",
+  //   "ahornstrasse"
+  // );
   private static final String ENVELOPE_PREFIX = "mensa-";
   private static final String RATINGS_ENVELOPE_PREFIX =
     ENVELOPE_PREFIX + "ratings-";
@@ -690,8 +684,11 @@ public class MensaService extends RESTService {
         return Response.ok().entity("dish not found in  db").build();
       }
       int dishId = res.getInt("id");
-      s = con.prepareStatement("INSERT INTO reviews VALUES (?,?,?,?,?,?)");
-      s.setString(1, rating.authorId);
+      s =
+        con.prepareStatement(
+          "INSERT INTO reviews (author,mensaId,dishId,timestamp,stars,comment) VALUES (?,?,?,?,?,?)"
+        );
+      s.setString(1, rating.author);
       s.setInt(2, rating.mensaId);
       s.setInt(3, dishId);
       s.setDate(4, new java.sql.Date(new Date().getTime()));
@@ -705,6 +702,24 @@ public class MensaService extends RESTService {
     }
     return Response.ok().entity(response).build();
   }
+
+  // /**
+  //  * Delete a rating for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @DELETE
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response deleteRating(@PathParam("dish") String dish)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5, dish);
+  //   HashMap<String, Rating> response = removeRating(dish);
+  //   return Response.ok().entity(response).build();
+  // }
 
   /**
    * Delete a rating for a dish.
@@ -766,26 +781,26 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
-  /**
-   * Delete a picture for a dish.
-   *
-   * @param dish Name of the dish.
-   * @return JSON encoded list of pictures.
-   */
-  @DELETE
-  @Path("/dishes/{dish}/pictures")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @RolesAllowed("authenticated")
-  public Response deletePicture(
-    @PathParam("dish") String dish,
-    Picture picture
-  )
-    throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_8, dish);
-    Map<String, ArrayList<Picture>> response = removePicture(dish, picture);
-    return Response.ok().entity(response).build();
-  }
+  // /**
+  //  * Delete a picture for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of pictures.
+  //  */
+  // @DELETE
+  // @Path("/dishes/{dish}/pictures")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response deletePicture(
+  //   @PathParam("dish") String dish,
+  //   Picture picture
+  // )
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_8, dish);
+  //   Map<String, ArrayList<Picture>> response = removePicture(dish, picture);
+  //   return Response.ok().entity(response).build();
+  // }
 
   /**
    * Get a list of dishes that have been served in any mensa in the past.
@@ -823,15 +838,15 @@ public class MensaService extends RESTService {
     }
   }
 
-  private HashMap<String, Rating> getRatingsForDish(String dish)
-    throws EnvelopeOperationFailedException {
-    try {
-      Envelope env = getOrCreateRatingsEnvelopeForDish(dish);
-      return (HashMap<String, Rating>) env.getContent();
-    } catch (EnvelopeAccessDeniedException e) {
-      return new HashMap<>();
-    }
-  }
+  // private HashMap<String, Rating> getRatingsForDish(String dish)
+  //   throws EnvelopeOperationFailedException {
+  //   try {
+  //     Envelope env = getOrCreateRatingsEnvelopeForDish(dish);
+  //     return (HashMap<String, Rating>) env.getContent();
+  //   } catch (EnvelopeAccessDeniedException e) {
+  //     return new HashMap<>();
+  //   }
+  // }
 
   private HashMap<String, ArrayList<Picture>> getPicturesForDish(String dish)
     throws EnvelopeOperationFailedException {
@@ -847,7 +862,7 @@ public class MensaService extends RESTService {
     throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
     UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
     String username = userAgent.getLoginName();
-    rating.authorId = username;
+    rating.author = username;
     rating.timestamp = getCurrentTimestamp();
     Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
     HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
@@ -982,7 +997,7 @@ public class MensaService extends RESTService {
 
   private static class Rating implements Serializable {
 
-    public String authorId;
+    public String author;
     public int stars;
     public String comment;
     public int mensaId;
@@ -997,7 +1012,7 @@ public class MensaService extends RESTService {
       Rating rating = (Rating) o;
       return (
         stars == rating.stars &&
-        authorId.equals(rating.authorId) &&
+        author.equals(rating.author) &&
         Objects.equals(comment, rating.comment) &&
         mensaId == rating.mensaId &&
         timestamp.equals(rating.timestamp)
@@ -1006,7 +1021,7 @@ public class MensaService extends RESTService {
 
     @Override
     public int hashCode() {
-      return Objects.hash(authorId, stars, comment, mensaId, timestamp);
+      return Objects.hash(author, stars, comment, mensaId, timestamp);
     }
   }
 
