@@ -971,36 +971,6 @@ public class MensaService extends RESTService {
   //   return sdf.format(date);
   // }
 
-  private void saveDishesToIndex(int mensaId) {
-    Date lastUpdate = this.lastDishUpdate.get(mensaId);
-    System.out.println("Last dish update: " + lastUpdate);
-    if (
-      lastUpdate != null &&
-      Math.abs(lastUpdate.getTime() - new Date().getTime()) < SIX_HOURS_IN_MS
-    ) {
-      System.out.println("No need to update dishes");
-      return;
-    }
-    System.out.println("Saving dishes to index...");
-    lastDishUpdate.put(mensaId, new Date());
-    try {
-      JSONArray menu = getMensaMenu(mensaId);
-      Connection con = getDatabaseConnection();
-      menu.forEach(
-        menuitem -> {
-          try {
-            addDishEntry((JSONObject) menuitem, con, mensaId);
-          } catch (SQLException e) {
-            e.printStackTrace();
-          }
-        }
-      );
-    } catch (Exception e) {
-      System.out.println("Error couldnt save dishes");
-      e.printStackTrace();
-    }
-  }
-
   private static class Rating implements Serializable {
 
     public String author;
@@ -1057,6 +1027,39 @@ public class MensaService extends RESTService {
 
     protected ChatException(String message) {
       super(message);
+    }
+  }
+
+  /**Saves the dishes for a  menu from a given mensa in the datbase
+   * @param mensaId Id of the mensa for which the menu was fetched
+   */
+  private void saveDishesToIndex(int mensaId) {
+    Date lastUpdate = this.lastDishUpdate.get(mensaId);
+    System.out.println("Last dish update: " + lastUpdate);
+    if (
+      lastUpdate != null &&
+      Math.abs(lastUpdate.getTime() - new Date().getTime()) < SIX_HOURS_IN_MS
+    ) {
+      System.out.println("No need to update dishes");
+      return;
+    }
+    System.out.println("Saving dishes to index...");
+    lastDishUpdate.put(mensaId, new Date());
+    try {
+      JSONArray menu = getMensaMenu(mensaId);
+      Connection con = getDatabaseConnection();
+      menu.forEach(
+        menuitem -> {
+          try {
+            addDishEntry((JSONObject) menuitem, con, mensaId);
+          } catch (SQLException e) {
+            e.printStackTrace();
+          }
+        }
+      );
+    } catch (Exception e) {
+      System.out.println("Error couldnt save dishes");
+      e.printStackTrace();
     }
   }
 
@@ -1165,6 +1168,7 @@ public class MensaService extends RESTService {
     return updated;
   }
 
+  /** Returns a connection to the database */
   private Connection getDatabaseConnection() throws SQLException {
     MensaService service = (MensaService) Context.get().getService();
 
