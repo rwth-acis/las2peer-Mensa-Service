@@ -65,7 +65,7 @@ import net.minidev.json.parser.ParseException;
   info = @Info(
     title = "las2peer Mensa Service",
     version = "1.0.2",
-    description = "A las2peer Mensa Service for  canteens supported by the OpenMensa API (https://openmensa.org/api/v2).",
+    description = "A las2peer Mensa Service for canteens supported by the OpenMensa API (https://openmensa.org/api/v2).",
     contact = @Contact(
       name = "Alexander Tobias Neumann",
       url = "https://las2peer.org",
@@ -268,7 +268,6 @@ public class MensaService extends RESTService {
         case 2:
           String menu = createMenuChatResponse(first, id);
           response = menu;
-          saveDishesToIndex(id);
           break;
         case maxEntries:
           mensas.last();
@@ -349,7 +348,6 @@ public class MensaService extends RESTService {
       } else {
         returnString = mensaMenu.toString();
       }
-      saveDishesToIndex(mensaID);
     } catch (IOException e) {
       return Response
         .status(Status.CONFLICT)
@@ -588,7 +586,7 @@ public class MensaService extends RESTService {
   @Path("/dishes")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getDishes() throws EnvelopeOperationFailedException {
+  public Response getDishes() {
     JSONArray dishes = new JSONArray();
 
     try {
@@ -605,6 +603,11 @@ public class MensaService extends RESTService {
     }
   }
 
+  /**
+   * checks wether a given mensa is supported
+   * @param mensa name of the mensa
+   * @return true if the mensa exists in the database
+   */
   private boolean isMensaSupported(String mensa) {
     try {
       ResultSet res = findMensasByName(mensa);
@@ -707,6 +710,7 @@ public class MensaService extends RESTService {
       System.out.println("Error on URL Connection to OpenMensa API");
       throw e;
     }
+    saveDishesToIndex(menu, mensaID);
     return menu;
   }
 
@@ -754,9 +758,9 @@ public class MensaService extends RESTService {
   }
 
   /**Saves the dishes for a  menu from a given mensa in the datbase
-   * @param mensaId Id of the mensa for which the menu was fetched
+   * @param menu the menu of dishes that should be saver
    */
-  private void saveDishesToIndex(int mensaId) {
+  private void saveDishesToIndex(JSONArray menu, int mensaId) {
     Date lastUpdate = this.lastDishUpdate.get(mensaId);
     System.out.println("Last dish update: " + lastUpdate);
     if (
@@ -769,7 +773,6 @@ public class MensaService extends RESTService {
     System.out.println("Saving dishes to index...");
     lastDishUpdate.put(mensaId, new Date());
     try {
-      JSONArray menu = getMensaMenu(mensaId);
       Connection con = getDatabaseConnection();
       menu.forEach(
         menuitem -> {
