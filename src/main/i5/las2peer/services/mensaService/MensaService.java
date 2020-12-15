@@ -4,6 +4,7 @@ import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.api.persistency.EnvelopeOperationFailedException;
+import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.services.mensaService.database.SQLDatabase;
@@ -439,9 +440,10 @@ public class MensaService extends RESTService {
       ResultSet res = s.executeQuery();
       while (res.next()) {
         review = new JSONObject();
-        review.put("mensa", res.getString("name"));
+        review.put("mensa", res.getString("mensas.name"));
         review.put("stars", res.getString("stars"));
         review.put("comment", res.getString("comment"));
+        review.put("author", res.getString("author"));
         reviews.add(review);
       }
       response = reviews;
@@ -473,34 +475,54 @@ public class MensaService extends RESTService {
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
     Object response = null;
     try {
+      System.out.println("Got rating: ");
+      System.out.print(rating);
+      System.out.println(dish);
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
         "SELECT (id) FROM dishes WHERE name=?"
       );
       s.setString(1, dish);
       ResultSet res = s.executeQuery();
+
       if (!res.next()) {
-        return Response.ok().entity("dish not found in  db").build();
+        return Response.ok().entity("dish not found in db").build();
       }
       int dishId = res.getInt("id");
       s =
         con.prepareStatement(
           "INSERT INTO reviews (author,mensaId,dishId,timestamp,stars,comment) VALUES (?,?,?,?,?,?)"
         );
-      s.setString(1, rating.author);
+      System.out.println("dishid: " + dishId);
+      // UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+      // String username = userAgent.getLoginName();
+      // if (username == null) {
+      //   username = rating.author;
+      // }
+
+      s.setString(1, "username");
       s.setInt(2, rating.mensaId);
       s.setInt(3, dishId);
       s.setDate(4, new java.sql.Date(new Date().getTime()));
       s.setInt(5, rating.stars);
       s.setString(6, rating.comment);
+      System.out.print(s);
       s.executeUpdate();
+
+      s = con.prepareStatement("SELECT * from reviews");
+      ResultSet r = s.executeQuery();
+      r.last();
+
+      System.out.println("id of new review: " + r.getInt("id"));
       s.close();
-      response = rating;
+      con.close();
+      return Response.ok().build();
     } catch (Exception e) {
       e.printStackTrace();
       response = e.getMessage();
+      System.out.println(e.getMessage());
+      return Response.ok().entity(response).build();
     }
-    return Response.ok().entity(response).build();
   }
 
   /**
@@ -862,7 +884,7 @@ public class MensaService extends RESTService {
   private int addOrUpdateMensaEntry(JSONObject obj, Connection con)
     throws SQLException {
     PreparedStatement statement = con.prepareStatement(
-      "REPLACE INTO mensas VALUES(?,?,?,?)"
+      "INSERT IGNORE INTO mensas VALUES(?,?,?,?)"
     );
     statement.setInt(1, Integer.parseInt(obj.getAsString("id")));
     statement.setString(2, obj.getAsString("name"));

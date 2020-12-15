@@ -1,6 +1,6 @@
-POST http://localhost:8080/mensa/menu
-Content-Type: text/html
+POST http://localhost:8080/mensa/dishes/Yaourt/ratings
+Content-Type: application/json
 
-{"mensa":"LTMA RES"}
+ {"stars": 5,"comment": "My Comment","mensaId": "187", "author":"alice" , "timestamp": null}
 
 
