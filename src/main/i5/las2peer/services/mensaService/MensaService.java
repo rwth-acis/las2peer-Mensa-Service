@@ -24,6 +24,8 @@ import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -51,6 +53,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Response.StatusType;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -417,28 +420,56 @@ public class MensaService extends RESTService {
   }
 
   /**
+   * Get a list of dishes that have been served in any mensa in the past.
+   *
+   * @return A list of strings with dish names.
+   */
+  @GET
+  @Path("/dishes")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response getDishes() {
+    JSONArray dishes = new JSONArray();
+    JSONObject dish;
+    try {
+      Connection con = getDatabaseConnection();
+      ResultSet res = con
+        .prepareStatement("SELECT DISTINCT (name,id) FROM dishes")
+        .executeQuery();
+      while (res.next()) {
+        dish = new JSONObject();
+        dish.appendField("name", res.getString("name"));
+        dish.appendField("id", res.getInt("id"));
+        dishes.add(dish);
+      }
+      return Response.ok().entity(dishes).build();
+    } catch (Exception e) {
+      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  /**
    * Retrieve all ratings for a dish.
    *
    * @param dish Name of the dish.
    * @return JSON encoded list of ratings.
    */
   @GET
-  @Path("/dishes/{dish}/ratings")
+  @Path("/dishes/{id}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getRatings(@PathParam("dish") String dish) {
+  public Response getRatings(@PathParam("id") int dishId) {
     Object response = null;
     final long responseStart = System.currentTimeMillis();
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
 
     try { //get Ratings from distributed storage
       JSONArray reviews = new JSONArray();
       JSONObject review;
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
-        "SELECT * FROM reviews LEFT JOIN (dishes,mensas) ON (reviews.dishid =dishes.id AND mensas.id=reviews.mensaId) WHERE dishes.name=?"
+        "SELECT * FROM reviews LEFT JOIN (dishes,mensas) ON (reviews.dishid =dishes.id AND mensas.id=reviews.mensaId) WHERE dishes.id=?"
       );
-      s.setString(1, dish);
+      s.setInt(1, dishId);
       ResultSet res = s.executeQuery();
       while (res.next()) {
         review = new JSONObject();
@@ -469,34 +500,34 @@ public class MensaService extends RESTService {
    * @return JSON encoded list of ratings.
    */
   @POST
-  @Path("/dishes/{dish}/ratings")
+  @Path("/dishes/{id}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response addRating(@PathParam("dish") String dish, Rating rating) {
-    System.out.println("Got rating for " + dish);
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
+  public Response addRating(@PathParam("id") int dishId, String rating) {
+    JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject response = new JSONObject();
-    response.appendField("dish", dish);
-    response.appendField("mensaId", rating.mensaId);
-    response.appendField("stars", rating.stars);
-    response.appendField("comment", rating.comment);
-    response.appendField("timestamp", new Date());
-
     try {
+      response = (JSONObject) p.parse(rating);
+      response.appendField("dishId", dishId);
+      // Context
+      //   .get()
+      //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
+      //TODO: change monitoring event
+
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
-        "SELECT (id) FROM dishes WHERE name=?"
+        "SELECT (name) FROM dishes WHERE id=?"
       );
-      s.setString(1, dish);
+      s.setInt(1, dishId);
       ResultSet res = s.executeQuery();
 
       if (!res.next()) {
         return Response.ok().entity("dish not found in db").build();
       }
 
-      int dishId = res.getInt("id");
-      response.appendField("dishId", dishId);
+      String dish = res.getString(1);
+      response.appendField("dish", dish);
 
       String username;
       Agent a = Context.get().getMainAgent();
@@ -505,9 +536,9 @@ public class MensaService extends RESTService {
         username = userAgent.getLoginName();
       } else {
         System.out.println("Agent is: " + a.getClass());
-        username = rating.author;
+        username = response.getAsString("author");
       }
-      response.appendField("username", username);
+      response.put("author", username);
 
       s =
         con.prepareStatement(
@@ -516,26 +547,34 @@ public class MensaService extends RESTService {
         );
 
       s.setString(1, username);
-      s.setInt(2, rating.mensaId);
+      s.setInt(2, response.getAsNumber("mensaId").intValue());
       s.setInt(3, dishId);
       s.setDate(4, new java.sql.Date(new Date().getTime()));
-      s.setInt(5, rating.stars);
-      s.setString(6, rating.comment);
+      s.setInt(5, (Integer) response.getAsNumber("stars"));
+      s.setString(6, response.getAsString("comment"));
       System.out.print(s);
+
       s.execute();
       ResultSet rs = s.getGeneratedKeys();
       if (rs.next()) {
         response.appendField("reviewId", rs.getInt(1));
-        System.out.println("id of new review: " + rs.getInt(1));
         s.close();
         con.close();
         return Response.ok().entity(response).build();
       } else {
-        return Response.ok().entity("could  not generate new review").build();
+        s.close();
+        con.close();
+        return Response
+          .status(Status.INTERNAL_SERVER_ERROR)
+          .entity("could  not generate new review")
+          .build();
       }
     } catch (Exception e) {
       e.printStackTrace();
-      return Response.ok().entity(e.getMessage()).build();
+      return Response
+        .status(Status.INTERNAL_SERVER_ERROR)
+        .entity(e.getMessage())
+        .build();
     }
   }
 
@@ -546,17 +585,18 @@ public class MensaService extends RESTService {
    * @return JSON encoded list of ratings.
    */
   @DELETE
-  @Path("/dishes/{dish}/ratings")
+  @Path("/dishes/{id}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response deleteRating(@PathParam("dish") int dishId) {
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5,
-        String.valueOf(dishId)
-      );
+  public Response deleteRating(@PathParam("id") int dishId) {
+    // Context
+    //   .get()
+    //   .monitorEvent(
+    //     MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5,
+    //     String.valueOf(dish)
+    //   );
+    //TODO: replace the monitoring message
     try {
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
@@ -579,13 +619,13 @@ public class MensaService extends RESTService {
    * @return JSON encoded list of pictures.
    */
   @GET
-  @Path("/dishes/{dish}/pictures")
+  @Path("/dishes/{id}/pictures")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getPictures(@PathParam("dish") String dish)
-    throws EnvelopeOperationFailedException {
+  public Response getPictures(@PathParam("id") int dishId) {
     final long responseStart = System.currentTimeMillis();
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_6, dish);
+    // Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_6, dish);
+    //TODO: adjust monitoring message
 
     Context
       .get()
@@ -603,40 +643,14 @@ public class MensaService extends RESTService {
    * @return JSON encoded list of pictures.
    */
   @POST
-  @Path("/dishes/{dish}/pictures")
+  @Path("/dishes/{id}/pictures")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response addPicture(@PathParam("dish") String dish, Picture picture) {
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_7, dish);
-
+  public Response addPicture(@PathParam("id") int dishId, Picture picture) {
+    //Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_7, dish);
+    //TODO: adjust monitoring message
     return Response.ok().entity("response").build();
-  }
-
-  /**
-   * Get a list of dishes that have been served in any mensa in the past.
-   *
-   * @return A list of strings with dish names.
-   */
-  @GET
-  @Path("/dishes")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response getDishes() {
-    JSONArray dishes = new JSONArray();
-
-    try {
-      Connection con = getDatabaseConnection();
-      ResultSet res = con
-        .prepareStatement("SELECT DISTINCT (name) FROM dishes")
-        .executeQuery();
-      while (res.next()) {
-        dishes.appendElement(res.getString("name"));
-      }
-      return Response.ok().entity(dishes).build();
-    } catch (Exception e) {
-      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
-    }
   }
 
   /**
