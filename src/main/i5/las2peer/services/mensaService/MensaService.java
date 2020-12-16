@@ -4,6 +4,7 @@ import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.api.persistency.EnvelopeOperationFailedException;
+import i5.las2peer.api.security.Agent;
 import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
@@ -27,6 +28,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -472,12 +474,16 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response addRating(@PathParam("dish") String dish, Rating rating) {
+    System.out.println("Got rating for " + dish);
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
-    Object response = null;
+    JSONObject response = new JSONObject();
+    response.appendField("dish", dish);
+    response.appendField("mensaId", rating.mensaId);
+    response.appendField("stars", rating.stars);
+    response.appendField("comment", rating.comment);
+    response.appendField("timestamp", new Date());
+
     try {
-      System.out.println("Got rating: ");
-      System.out.print(rating);
-      System.out.println(dish);
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
         "SELECT (id) FROM dishes WHERE name=?"
@@ -488,40 +494,48 @@ public class MensaService extends RESTService {
       if (!res.next()) {
         return Response.ok().entity("dish not found in db").build();
       }
+
       int dishId = res.getInt("id");
+      response.appendField("dishId", dishId);
+
+      String username;
+      Agent a = Context.get().getMainAgent();
+      if (a instanceof UserAgent) {
+        UserAgent userAgent = (UserAgent) a;
+        username = userAgent.getLoginName();
+      } else {
+        System.out.println("Agent is: " + a.getClass());
+        username = rating.author;
+      }
+      response.appendField("username", username);
+
       s =
         con.prepareStatement(
-          "INSERT INTO reviews (author,mensaId,dishId,timestamp,stars,comment) VALUES (?,?,?,?,?,?)"
+          "INSERT INTO reviews (author,mensaId,dishId,timestamp,stars,comment) VALUES (?,?,?,?,?,?)",
+          Statement.RETURN_GENERATED_KEYS
         );
-      System.out.println("dishid: " + dishId);
-      // UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-      // String username = userAgent.getLoginName();
-      // if (username == null) {
-      //   username = rating.author;
-      // }
 
-      s.setString(1, "username");
+      s.setString(1, username);
       s.setInt(2, rating.mensaId);
       s.setInt(3, dishId);
       s.setDate(4, new java.sql.Date(new Date().getTime()));
       s.setInt(5, rating.stars);
       s.setString(6, rating.comment);
       System.out.print(s);
-      s.executeUpdate();
-
-      s = con.prepareStatement("SELECT * from reviews");
-      ResultSet r = s.executeQuery();
-      r.last();
-
-      System.out.println("id of new review: " + r.getInt("id"));
-      s.close();
-      con.close();
-      return Response.ok().build();
+      s.execute();
+      ResultSet rs = s.getGeneratedKeys();
+      if (rs.next()) {
+        response.appendField("reviewId", rs.getInt(1));
+        System.out.println("id of new review: " + rs.getInt(1));
+        s.close();
+        con.close();
+        return Response.ok().entity(response).build();
+      } else {
+        return Response.ok().entity("could  not generate new review").build();
+      }
     } catch (Exception e) {
       e.printStackTrace();
-      response = e.getMessage();
-      System.out.println(e.getMessage());
-      return Response.ok().entity(response).build();
+      return Response.ok().entity(e.getMessage()).build();
     }
   }
 
