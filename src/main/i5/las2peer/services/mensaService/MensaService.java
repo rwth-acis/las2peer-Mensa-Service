@@ -3,7 +3,6 @@ package i5.las2peer.services.mensaService;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
-import i5.las2peer.api.persistency.EnvelopeOperationFailedException;
 import i5.las2peer.api.security.Agent;
 import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
@@ -24,8 +23,6 @@ import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -53,7 +50,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Response.StatusType;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -133,9 +129,7 @@ public class MensaService extends RESTService {
         this.databasePort
       );
     try {
-      System.out.println("Connecting to las2peermon...");
       Connection con = database.getDataSource().getConnection();
-      System.out.println("Database connection successfull");
       con.close();
     } catch (SQLException e) {
       e.printStackTrace();
@@ -301,6 +295,7 @@ public class MensaService extends RESTService {
    * This method returns the current menu of a canteen. This method only work for mensa academica, ahorn and vita in Aachen
    *
    * @param mensa    A canteen of the RWTH.
+   * @param format Format in which the menu should be returned
    * @param language The user's language.
    * @return Returns a String containing the menu.
    */
@@ -329,15 +324,6 @@ public class MensaService extends RESTService {
     JSONArray mensaMenu;
     String returnString;
 
-    if (!isMensaSupported(mensa)) {
-      Context
-        .get()
-        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_20, mensa);
-      return Response
-        .status(Status.NOT_FOUND)
-        .entity("Mensa not supported!")
-        .build();
-    }
     Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1, mensa);
     Context
       .get()
@@ -349,6 +335,7 @@ public class MensaService extends RESTService {
       }
 
       mensaMenu = getMensaMenu(mensaID);
+
       if ("html".equals(format)) {
         returnString = convertToHtml(mensaMenu);
       } else {
@@ -357,10 +344,13 @@ public class MensaService extends RESTService {
     } catch (IOException e) {
       return Response
         .status(Status.CONFLICT)
-        .entity("Could not get the menu for mensa ")
+        .entity("Could not get the menu for mensa " + mensa)
         .build();
     } catch (Exception e) {
-      return Response.status(Status.CONFLICT).entity(e.getMessage()).build();
+      return Response
+        .status(Status.INTERNAL_SERVER_ERROR)
+        .entity(e.getMessage())
+        .build();
     }
 
     Context
@@ -388,38 +378,6 @@ public class MensaService extends RESTService {
   }
 
   /**
-   * Command management for Slack.
-   *
-   * @param form Parameters provided by the slash command.
-   * @return Returns the result for the specific command.
-   */
-  @POST
-  @Path("/command")
-  @Produces(MediaType.TEXT_HTML + ";charset=utf-8")
-  @Consumes("application/x-www-form-urlencoded")
-  @ApiResponses(
-    value = {
-      @ApiResponse(
-        code = HttpURLConnection.HTTP_OK,
-        message = "Command executed."
-      ),
-    }
-  )
-  @ApiOperation(value = "Perform a command", notes = "")
-  public Response postTemplate(MultivaluedMap<String, String> form) {
-    String cmd = form.getFirst("command");
-    String text = form.getFirst("text");
-    String response = "";
-    if (cmd.equals("/mensa")) {
-      response = (String) getMensa(text, "de-de", "html").getEntity();
-      Context
-        .get()
-        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
-    }
-    return Response.ok().entity(response).build();
-  }
-
-  /**
    * Get a list of dishes that have been served in any mensa in the past.
    *
    * @return A list of strings with dish names.
@@ -429,12 +387,13 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response getDishes() {
+    System.out.println("Loading dishes...");
     JSONArray dishes = new JSONArray();
     JSONObject dish;
     try {
       Connection con = getDatabaseConnection();
       ResultSet res = con
-        .prepareStatement("SELECT DISTINCT (name,id) FROM dishes")
+        .prepareStatement("SELECT DISTINCT name,id FROM dishes")
         .executeQuery();
       while (res.next()) {
         dish = new JSONObject();
@@ -442,23 +401,29 @@ public class MensaService extends RESTService {
         dish.appendField("id", res.getInt("id"));
         dishes.add(dish);
       }
+      con.close();
       return Response.ok().entity(dishes).build();
     } catch (Exception e) {
-      return Response.status(Status.INTERNAL_SERVER_ERROR).build();
+      e.printStackTrace();
+      return Response
+        .status(Status.INTERNAL_SERVER_ERROR)
+        .entity(e.getMessage())
+        .build();
     }
   }
 
   /**
    * Retrieve all ratings for a dish.
    *
-   * @param dish Name of the dish.
+   * @param id id of the dish.
    * @return JSON encoded list of ratings.
    */
   @GET
   @Path("/dishes/{id}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getRatings(@PathParam("id") int dishId) {
+  public Response getRatings(@PathParam("id") int id) {
+    System.out.println("Getting ratings for dish with id " + id);
     Object response = null;
     final long responseStart = System.currentTimeMillis();
 
@@ -469,7 +434,7 @@ public class MensaService extends RESTService {
       PreparedStatement s = con.prepareStatement(
         "SELECT * FROM reviews LEFT JOIN (dishes,mensas) ON (reviews.dishid =dishes.id AND mensas.id=reviews.mensaId) WHERE dishes.id=?"
       );
-      s.setInt(1, dishId);
+      s.setInt(1, id);
       ResultSet res = s.executeQuery();
       while (res.next()) {
         review = new JSONObject();
@@ -486,7 +451,8 @@ public class MensaService extends RESTService {
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
           String.valueOf(System.currentTimeMillis() - responseStart)
         );
-    } catch (SQLException e) {
+      con.close();
+    } catch (Exception e) {
       e.printStackTrace();
       response = e.getMessage();
     }
@@ -496,7 +462,8 @@ public class MensaService extends RESTService {
   /**
    * Add a rating for a dish.
    *
-   * @param dish Name of the dish.
+   * @param id id of the dish.
+   * @param rating rating as JSON string
    * @return JSON encoded list of ratings.
    */
   @POST
@@ -504,12 +471,13 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response addRating(@PathParam("id") int dishId, String rating) {
+  public Response addRating(@PathParam("id") int id, String rating) {
+    System.out.println("Got a review: " + rating);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject response = new JSONObject();
     try {
       response = (JSONObject) p.parse(rating);
-      response.appendField("dishId", dishId);
+      response.appendField("dishId", id);
       // Context
       //   .get()
       //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
@@ -519,7 +487,7 @@ public class MensaService extends RESTService {
       PreparedStatement s = con.prepareStatement(
         "SELECT (name) FROM dishes WHERE id=?"
       );
-      s.setInt(1, dishId);
+      s.setInt(1, id);
       ResultSet res = s.executeQuery();
 
       if (!res.next()) {
@@ -548,7 +516,7 @@ public class MensaService extends RESTService {
 
       s.setString(1, username);
       s.setInt(2, response.getAsNumber("mensaId").intValue());
-      s.setInt(3, dishId);
+      s.setInt(3, id);
       s.setDate(4, new java.sql.Date(new Date().getTime()));
       s.setInt(5, (Integer) response.getAsNumber("stars"));
       s.setString(6, response.getAsString("comment"));
@@ -581,7 +549,7 @@ public class MensaService extends RESTService {
   /**
    * Delete a rating for a dish.
    *
-   * @param dish Name of the dish.
+   * @param id id of the dish.
    * @return JSON encoded list of ratings.
    */
   @DELETE
@@ -589,7 +557,8 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response deleteRating(@PathParam("id") int dishId) {
+  public Response deleteRating(@PathParam("id") int id) {
+    System.out.println("Deleting rating with id " + id);
     // Context
     //   .get()
     //   .monitorEvent(
@@ -602,9 +571,10 @@ public class MensaService extends RESTService {
       PreparedStatement s = con.prepareStatement(
         "DELETE FROM reviews WHERE id=?"
       );
-      s.setInt(1, dishId);
+      s.setInt(1, id);
       s.executeUpdate();
       s.close();
+      con.close();
       return Response.ok().build();
     } catch (SQLException e) {
       e.printStackTrace();
@@ -615,18 +585,28 @@ public class MensaService extends RESTService {
   /**
    * Retrieve all pictures for a dish.
    *
-   * @param dish Name of the dish.
+   * @param id id of the dish.
    * @return JSON encoded list of pictures.
    */
   @GET
   @Path("/dishes/{id}/pictures")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response getPictures(@PathParam("id") int dishId) {
+  public Response getPictures(@PathParam("id") int id) {
+    System.out.println("Getting pictures for dish with id " + id);
     final long responseStart = System.currentTimeMillis();
     // Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_6, dish);
     //TODO: adjust monitoring message
-
+    JSONArray pics = new JSONArray();
+    try {
+      Connection con = getDatabaseConnection();
+      PreparedStatement statement = con.prepareStatement(
+        "SELECT * from pictures"
+      ); //TODO
+      con.close();
+    } catch (Exception e) {
+      //TODO: handle exception
+    }
     Context
       .get()
       .monitorEvent(
@@ -639,7 +619,8 @@ public class MensaService extends RESTService {
   /**
    * Add a picture for a dish.
    *
-   * @param dish Name of the dish.
+   * @param id id of the dish.
+   * @param picture picture of a dish encoded in base64
    * @return JSON encoded list of pictures.
    */
   @POST
@@ -647,7 +628,8 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
-  public Response addPicture(@PathParam("id") int dishId, Picture picture) {
+  public Response addPicture(@PathParam("id") int id, Picture picture) {
+    System.out.println("Got picture for dish with id " + id);
     //Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_7, dish);
     //TODO: adjust monitoring message
     return Response.ok().entity("response").build();
@@ -666,6 +648,38 @@ public class MensaService extends RESTService {
       e.printStackTrace();
       return false;
     }
+  }
+
+  /**
+   * Command management for Slack.
+   *
+   * @param form Parameters provided by the slash command.
+   * @return Returns the result for the specific command.
+   */
+  @POST
+  @Path("/command")
+  @Produces(MediaType.TEXT_HTML + ";charset=utf-8")
+  @Consumes("application/x-www-form-urlencoded")
+  @ApiResponses(
+    value = {
+      @ApiResponse(
+        code = HttpURLConnection.HTTP_OK,
+        message = "Command executed."
+      ),
+    }
+  )
+  @ApiOperation(value = "Perform a command", notes = "")
+  public Response postTemplate(MultivaluedMap<String, String> form) {
+    String cmd = form.getFirst("command");
+    String text = form.getFirst("text");
+    String response = "";
+    if (cmd.equals("/mensa")) {
+      response = (String) getMensa(text, "de-de", "html").getEntity();
+      Context
+        .get()
+        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
+    }
+    return Response.ok().entity(response).build();
   }
 
   /**Gets the menu for the mensa and formats it as a string which can be presented in chat
@@ -726,7 +740,7 @@ public class MensaService extends RESTService {
    * Gets the menu for a given mensa
    * @param mensaID id of the mensa in the OpenMensa API
    * @return the menu of the mensa for that day, or Monday if the given day is on a weekend
-   * @throws IOException
+   * @throws IOException if the menu could not be fetched from the openmensa api
    */
   public JSONArray getMensaMenu(int mensaID) throws IOException {
     JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
@@ -969,47 +983,56 @@ public class MensaService extends RESTService {
   /** Exceptions ,with messages, that should be returned in Chat */
   protected static class ChatException extends Exception {
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
     protected ChatException(String message) {
       super(message);
     }
   }
 
-  private static class Rating implements Serializable {
+  // private static class Rating implements Serializable {
 
-    public String author;
-    public int stars;
-    public String comment;
-    public int mensaId;
-    public String timestamp;
+  //   /**
+  //  *
+  //  */
+  // private static final long serialVersionUID = 1L;
+  // public String author;
+  //   public int stars;
+  //   public String comment;
+  //   public int mensaId;
+  //   public String timestamp;
 
-    Rating() {}
+  //   @Override
+  //   public boolean equals(Object o) {
+  //     if (this == o) return true;
+  //     if (o == null || getClass() != o.getClass()) return false;
+  //     Rating rating = (Rating) o;
+  //     return (
+  //       stars == rating.stars &&
+  //       author.equals(rating.author) &&
+  //       Objects.equals(comment, rating.comment) &&
+  //       mensaId == rating.mensaId &&
+  //       timestamp.equals(rating.timestamp)
+  //     );
+  //   }
 
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      Rating rating = (Rating) o;
-      return (
-        stars == rating.stars &&
-        author.equals(rating.author) &&
-        Objects.equals(comment, rating.comment) &&
-        mensaId == rating.mensaId &&
-        timestamp.equals(rating.timestamp)
-      );
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(author, stars, comment, mensaId, timestamp);
-    }
-  }
+  //   @Override
+  //   public int hashCode() {
+  //     return Objects.hash(author, stars, comment, mensaId, timestamp);
+  //   }
+  // }
 
   private static class Picture implements Serializable {
 
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
     public String image;
     public String author;
-
-    Picture() {}
 
     @Override
     public boolean equals(Object o) {
@@ -1024,7 +1047,7 @@ public class MensaService extends RESTService {
       return Objects.hash(image, author);
     }
   }
-  //old implementation using envelopes
+  // //old implementation using envelopes
 
   // public static int ordinalIndexOf(String str, String substr, int n) {
   //   int pos = -1;

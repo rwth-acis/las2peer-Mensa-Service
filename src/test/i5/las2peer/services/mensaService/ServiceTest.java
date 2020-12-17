@@ -125,7 +125,7 @@ public class ServiceTest {
       }
       //Mensa not supported:
       result = getMensa(client, "mensaGibtEsNicht", "language");
-      Assert.assertEquals(404, result.getHttpCode());
+      Assert.assertEquals(409, result.getHttpCode());
       // System.out.println(
       //   "Result of 'mensaGibtEsNicht': " + result.getResponse().trim()
       // );
