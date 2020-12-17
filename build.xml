@@ -105,6 +105,8 @@
     <!-- Compilation -->
     <target name="compile_main" depends="init_compile">
         <javac srcdir="${src.main}" destdir="${tmp.classes}" classpathref="libraries" debug="on" encoding="UTF-8" includeantruntime="false" />
+        <echo>Java/JVM version: ${ant.java.version}</echo>
+        <echo>Java/JVM detail version: ${java.version}</echo>
         <copy todir="${tmp.classes}">
             <fileset dir="${src.main}">
                 <include name="**/*.xml" />
@@ -114,6 +116,8 @@
 
     <target name="compile_junit" depends="init_compile">
         <javac srcdir="${src.junit}" destdir="${tmp.junit}" classpath="${tmp.classes}:${lib.junit}" classpathref="libraries" debug="on" encoding="UTF-8" includeantruntime="false" />
+        <echo>Java/JVM version: ${ant.java.version}</echo>
+        <echo>Java/JVM detail version: ${java.version}</echo>
         <copy todir="${tmp.junit}">
             <fileset dir="${src.junit}">
                 <include name="**/*.xml" />
