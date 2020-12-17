@@ -100,40 +100,40 @@ public class ServiceTest {
     }
   }
 
-  // /**
-  //  * Test to get menus for some available canteens.
-  //  */
-  // @Test
-  // public void testGetMensaMenus() {
-  //   try {
-  //     MiniClient client = getClient();
-  //     ClientResponse result;
-  //     // Try to get the menus
-  //     System.out.println(
-  //       "Please note that this service test will fail if the menu for the mensa is not available due to the canteen being closed"
-  //     );
-  //     String[] mensas = { "vita", "academica" };
+  /**
+   * Test to get menus for some available canteens.
+   */
+  @Test
+  public void testGetMensaMenus() {
+    try {
+      MiniClient client = getClient();
+      ClientResponse result;
+      // Try to get the menus
+      System.out.println(
+        "Please note that this service test will fail if the menu for the mensa is not available due to the canteen being closed"
+      );
+      String[] mensas = { "vita", "academica" };
 
-  //     for (String mensa : mensas) {
-  //       System.out.println("Trying to fetch menu for mensa " + mensa);
-  //       result = getMensa(client, mensa, "language");
+      for (String mensa : mensas) {
+        System.out.println("Trying to fetch menu for mensa " + mensa);
+        result = getMensa(client, mensa, "language");
 
-  //       Assert.assertEquals(200, result.getHttpCode());
-  //       // System.out.println(
-  //       //   "Result of '" + mensa + "': " + result.getResponse().trim()
-  //       // );
-  //     }
-  //     //Mensa not supported:
-  //     result = getMensa(client, "mensaGibtEsNicht", "language");
-  //     Assert.assertEquals(404, result.getHttpCode());
-  //     // System.out.println(
-  //     //   "Result of 'mensaGibtEsNicht': " + result.getResponse().trim()
-  //     // );
-  //   } catch (Exception e) {
-  //     e.printStackTrace();
-  //     Assert.fail(e.toString());
-  //   }
-  // }
+        Assert.assertEquals(200, result.getHttpCode());
+        // System.out.println(
+        //   "Result of '" + mensa + "': " + result.getResponse().trim()
+        // );
+      }
+      //Mensa not supported:
+      result = getMensa(client, "mensaGibtEsNicht", "language");
+      Assert.assertEquals(404, result.getHttpCode());
+      // System.out.println(
+      //   "Result of 'mensaGibtEsNicht': " + result.getResponse().trim()
+      // );
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.toString());
+    }
+  }
 
   // /**
   //  * Test to execute a command.
@@ -184,6 +184,22 @@ public class ServiceTest {
   //   System.out.println(response.getResponse());
   //   Assert.assertEquals(200, response.getHttpCode());
   // }
+  /**
+   * Test to add a rating for a dish.
+   */
+  @Test
+  public void testGetDishes() throws JSONException {
+    // given
+    System.out.println("Adding rating");
+    MiniClient client = getClient();
+    // when
+    ClientResponse res = getMensa(client, SOME_MENSA, "language"); // fetch menus to ensure that there are dishes in the db
+    // then
+    Assert.assertEquals(200, res.getHttpCode());
+    res = getDishes(client);
+    Assert.assertEquals(200, res.getHttpCode());
+    System.out.println(res.getResponse());
+  }
 
   // /**
   //  * Test to add a picture for a dish.
@@ -303,6 +319,17 @@ public class ServiceTest {
       "text/plain",
       MediaType.TEXT_HTML + ";charset=utf-8",
       header
+    );
+  }
+
+  private ClientResponse getDishes(MiniClient client) {
+    return client.sendRequest(
+      "GET",
+      mainPath + "dishes",
+      "",
+      MediaType.APPLICATION_JSON,
+      MediaType.APPLICATION_JSON,
+      new HashMap<String, String>()
     );
   }
 
