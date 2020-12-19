@@ -300,7 +300,7 @@ public class MensaService extends RESTService {
    * @return Returns a String containing the menu.
    */
   @GET
-  @Path("/{mensa}")
+  @Path("/{id}")
   @ApiOperation(
     value = "Get the menu of a mensa",
     notes = "The mensa must be supported with the Studierendenwerk in Aachen."
@@ -315,7 +315,7 @@ public class MensaService extends RESTService {
     }
   )
   public Response getMensa(
-    @PathParam("mensa") String mensa,
+    @PathParam("id") int id,
     @HeaderParam("accept-language") @DefaultValue("de-de") String language,
     @QueryParam("format") @DefaultValue("html") String format
   ) {
@@ -324,17 +324,13 @@ public class MensaService extends RESTService {
     JSONArray mensaMenu;
     String returnString;
 
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1, mensa);
-    Context
-      .get()
-      .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_2, language);
+    // Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1, id);
+    // Context
+    //   .get()
+    //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_2, language);
+    //TODO: adjust monitoring message
     try {
-      mensaID = getMensaId(mensa);
-      if (mensaID == -1) {
-        throw new IOException("Mensa Id not found");
-      }
-
-      mensaMenu = getMensaMenu(mensaID);
+      mensaMenu = getMensaMenu(id);
 
       if ("html".equals(format)) {
         returnString = convertToHtml(mensaMenu);
@@ -344,7 +340,7 @@ public class MensaService extends RESTService {
     } catch (IOException e) {
       return Response
         .status(Status.CONFLICT)
-        .entity("Could not get the menu for mensa " + mensa)
+        .entity("Could not get the menu for mensa " + id)
         .build();
     } catch (Exception e) {
       return Response
@@ -676,7 +672,8 @@ public class MensaService extends RESTService {
     String text = form.getFirst("text");
     String response = "";
     if (cmd.equals("/mensa")) {
-      response = (String) getMensa(text, "de-de", "html").getEntity();
+      response =
+        (String) getMensa(getMensaId(text), "de-de", "html").getEntity();
       Context
         .get()
         .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
