@@ -245,11 +245,17 @@ public class MensaService extends RESTService {
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
       String mensa = bodyJson.getAsString("mensa");
+      String city = bodyJson.getAsString("city");
       if (mensa == null) throw new ChatException(
         "Please specify the mensa, for which you want to get the menu."
       );
+      ResultSet mensas;
+      if (city != null) {
+        mensas = findMensas(mensa, city);
+      } else {
+        mensas = findMensas(mensa);
+      }
 
-      ResultSet mensas = findMensasByName(mensa);
       if (!mensas.next()) throw new ChatException(
         "Sorry, I could not find a mensa with that name. 💁"
       );
@@ -320,7 +326,7 @@ public class MensaService extends RESTService {
     @QueryParam("format") @DefaultValue("html") String format
   ) {
     final long responseStart = System.currentTimeMillis();
-    int mensaID;
+
     JSONArray mensaMenu;
     String returnString;
 
@@ -643,7 +649,7 @@ public class MensaService extends RESTService {
    */
   private boolean isMensaSupported(String mensa) {
     try {
-      ResultSet res = findMensasByName(mensa);
+      ResultSet res = findMensas(mensa);
       return res.next(); //true if at least one entry matches the input
     } catch (Exception e) {
       e.printStackTrace();
@@ -721,7 +727,7 @@ public class MensaService extends RESTService {
    * @param mensaName name of the mensa
    * @return the set of mensas which match the mensa name
    */
-  private ResultSet findMensasByName(String mensaName) {
+  private ResultSet findMensas(String mensaName) {
     Connection dbConnection = null;
     PreparedStatement statement = null;
     ResultSet res;
@@ -730,6 +736,26 @@ public class MensaService extends RESTService {
       statement =
         dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
       statement.setString(1, "%" + mensaName + "%");
+      res = statement.executeQuery();
+      return res;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  private ResultSet findMensas(String mensaName, String city) {
+    Connection dbConnection = null;
+    PreparedStatement statement = null;
+    ResultSet res;
+    try {
+      dbConnection = getDatabaseConnection();
+      statement =
+        dbConnection.prepareStatement(
+          "SELECT * FROM mensas WHERE name LIKE ? AND city LIKE ?"
+        );
+      statement.setString(1, "%" + mensaName + "%");
+      statement.setString(1, city);
       res = statement.executeQuery();
       return res;
     } catch (Exception e) {
