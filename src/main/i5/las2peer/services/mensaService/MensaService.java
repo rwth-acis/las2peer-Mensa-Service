@@ -294,8 +294,8 @@ public class MensaService extends RESTService {
   /**
    * This method returns the current menu of a canteen. This method only work for mensa academica, ahorn and vita in Aachen
    *
-   * @param mensa    A canteen of the RWTH.
-   * @param format Format in which the menu should be returned
+   * @param id    Id of a canteen supported by the OpenMensa API.
+   * @param format Format in which the menu should be returned (json or html)
    * @param language The user's language.
    * @return Returns a String containing the menu.
    */
@@ -438,7 +438,7 @@ public class MensaService extends RESTService {
         review.put("stars", res.getInt("stars"));
         review.put("comment", res.getString("comment"));
         review.put("author", res.getString("author"));
-        review.put("timestamp", res.getDate("timestamp"));
+        review.put("timestamp", res.getDate("timestamp").toString());
         reviews.add(review);
       }
       System.out.println(reviews);
@@ -503,6 +503,9 @@ public class MensaService extends RESTService {
       } else {
         System.out.println("Agent is: " + a.getClass());
         username = response.getAsString("author");
+        if (username == null) {
+          username = "anonymous";
+        }
       }
       response.put("author", username);
 
@@ -515,7 +518,7 @@ public class MensaService extends RESTService {
       s.setString(1, username);
       s.setInt(2, response.getAsNumber("mensaId").intValue());
       s.setInt(3, id);
-      s.setDate(4, new java.sql.Date(new Date().getTime()));
+      s.setDate(4, new java.sql.Date(System.currentTimeMillis()));
       s.setInt(5, (Integer) response.getAsNumber("stars"));
       s.setString(6, response.getAsString("comment"));
       System.out.print(s);

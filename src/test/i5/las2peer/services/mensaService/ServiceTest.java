@@ -314,7 +314,7 @@ public class ServiceTest {
     header.put("accept-language", language);
     return client.sendRequest(
       "GET",
-      mainPath + mensa,
+      mainPath + getMensaId(mensa),
       "",
       "text/plain",
       MediaType.TEXT_HTML + ";charset=utf-8",
