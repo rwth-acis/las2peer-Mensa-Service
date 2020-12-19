@@ -439,11 +439,12 @@ public class MensaService extends RESTService {
       while (res.next()) {
         review = new JSONObject();
         review.put("mensa", res.getString("mensas.name"));
-        review.put("stars", res.getString("stars"));
+        review.put("stars", res.getInt("stars"));
         review.put("comment", res.getString("comment"));
         review.put("author", res.getString("author"));
         reviews.add(review);
       }
+      System.out.println(reviews);
       response = reviews;
       Context
         .get()
@@ -613,7 +614,7 @@ public class MensaService extends RESTService {
         MonitoringEvent.SERVICE_CUSTOM_MESSAGE_42,
         String.valueOf(System.currentTimeMillis() - responseStart)
       );
-    return Response.ok().entity("response").build();
+    return Response.ok().entity(new JSONArray()).build();
   }
 
   /**
