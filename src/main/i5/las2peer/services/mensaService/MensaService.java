@@ -442,6 +442,7 @@ public class MensaService extends RESTService {
         review.put("stars", res.getInt("stars"));
         review.put("comment", res.getString("comment"));
         review.put("author", res.getString("author"));
+        review.put("timestamp", res.getDate("timestamp"));
         reviews.add(review);
       }
       System.out.println(reviews);
