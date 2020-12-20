@@ -269,7 +269,7 @@ public class MensaService extends RESTService {
         mensaObj.getAsNumber("id").intValue()
       );
       chatResponse.appendField("text", menu);
-      context.put("selected_mensa", mensaObj.getAsNumber("id"));
+      context.put("selected_mensa", mensaObj);
       ContextInfo.put(channelId, context.toJSONString());
       return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
@@ -498,12 +498,12 @@ public class MensaService extends RESTService {
       }
       ResultSet mensas = findMensas(mensa);
       JSONObject mensaObj = selectMensa(mensas);
-      context.put("selected_mensa", mensaObj.getAsNumber("id").intValue()); //save the mensa obj in context for later lookup on submitReview
+      context.put("selected_mensa", mensaObj); //save the mensa obj in context for later lookup on submitReview
       JSONObject dish = extractDishFromMenu(
         mensaObj.getAsNumber("id").intValue(),
         category
       );
-      context.put("selected_dish", dish.getAsNumber("id").intValue()); //save the dish obj in context for later lookup on submitReview
+      context.put("selected_dish", dish); //save the dish obj in context for later lookup on submitReview
       chatResponse.appendField(
         "text",
         "You ate " +
@@ -545,17 +545,17 @@ public class MensaService extends RESTService {
       }
       String author = json.getAsString("email");
 
-      Number dishId = context.getAsNumber("selected_dish"); // specified when prepareReview was called
-      Number mensaId = context.getAsNumber("selected_mensa"); // specified when prepareReview was called
+      JSONObject dish = (JSONObject) context.get("selected_dish"); // specified when prepareReview was called
+      JSONObject mensa = (JSONObject) context.get("selected_mensa"); // specified when prepareReview was called
       Number starsFromContext = context.getAsNumber("stars"); // specified when prepareReview was called
 
-      if (dishId == null) {
+      if (dish == null) {
         throw new ChatException(
           "Sorry, I could not find the dish, you selected earlier, in my records 🙁"
         );
       }
 
-      if (mensaId == null) {
+      if (mensa == null) {
         throw new ChatException(
           "Sorry, I could not find the mensa, you selected earlier, in my records 🙁"
         );
@@ -569,11 +569,14 @@ public class MensaService extends RESTService {
 
       JSONObject rating = new JSONObject();
       rating.put("author", author);
-      rating.put("mensaId", mensaId.intValue());
+      rating.put("mensaId", mensa.getAsNumber("id").intValue());
       rating.put("stars", starsFromContext.intValue());
       rating.put("comment", comment);
 
-      Response res = addRating(dishId.intValue(), rating.toJSONString());
+      Response res = addRating(
+        dish.getAsNumber("id").intValue(),
+        rating.toJSONString()
+      );
 
       if (res.getStatus() == 200) {
         chatResponse.appendField(
@@ -630,18 +633,11 @@ public class MensaService extends RESTService {
       String dish = res.getString(1);
       response.appendField("dish", dish);
 
-      String username;
-      Agent a = Context.get().getMainAgent();
-      if (a instanceof UserAgent) {
-        UserAgent userAgent = (UserAgent) a;
-        username = userAgent.getLoginName();
-      } else {
-        System.out.println("Agent is: " + a.getClass());
-        username = response.getAsString("author");
-        if (username == null) {
-          username = "anonymous";
-        }
+      String username = response.getAsString("author");
+      if (username == null) {
+        username = "anonymous";
       }
+
       response.put("author", username);
 
       s =
