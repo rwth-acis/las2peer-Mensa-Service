@@ -448,6 +448,11 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
+  /**
+   * Prepares a review for a chatuser. This function should only be called by a bot service
+   * @param body JSONString which contains information about the review. In a first phase it should contain the mensa and category of dish. In a second phase the amount of stars should be provided
+   * @return Chatresponse
+   */
   @POST
   @Path("/prepareReview")
   @Produces(MediaType.APPLICATION_JSON)
@@ -523,6 +528,11 @@ public class MensaService extends RESTService {
     return Response.ok().entity(chatResponse).build();
   }
 
+  /**
+   * Function which will submit a rating for a chatuser. This function should only be called by a bot
+   * @param body as JSONString should contain an optional reivew comment as msg field
+   * @return Chatresponse
+   */
   @POST
   @Path("/submitReview")
   @Produces(MediaType.APPLICATION_JSON)
