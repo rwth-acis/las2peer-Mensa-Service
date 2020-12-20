@@ -54,6 +54,7 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
+import org.apache.commons.io.filefilter.RegexFileFilter;
 
 /**
  * las2peer-Mensa-Service
@@ -89,8 +90,10 @@ public class MensaService extends RESTService {
   private static final String OPEN_MENSA_API_ENDPOINT =
     "https://openmensa.org/api/v2";
 
-  private Map<Integer, Date> lastDishUpdate;
+  private HashMap<Integer, Date> lastDishUpdate;
   private Date lastMensasUpdate;
+  private HashMap<String, String> ContextInfo;
+  final int maxEntries = 20;
 
   private String databaseName;
   private int databaseTypeInt = 1;
@@ -119,6 +122,7 @@ public class MensaService extends RESTService {
     setFieldValues();
     this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
     this.lastDishUpdate = new HashMap<>();
+    this.ContextInfo = new HashMap<>();
     this.database =
       new SQLDatabase(
         this.databaseType,
@@ -237,55 +241,38 @@ public class MensaService extends RESTService {
     }
   )
   public Response getMenu(String body) {
+    System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
     int id;
-    final int maxEntries = 20;
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
+      String channelId = bodyJson.getAsString("channel");
+      JSONObject context = getContext(channelId, p);
+
       String mensa = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
-      if (mensa == null) throw new ChatException(
-        "Please specify the mensa, for which you want to get the menu."
-      );
+      if (mensa == null) {
+        mensa = context.getAsString("default_mensa"); // see if user has chosen a default_mensa
+        if (mensa == null) throw new ChatException(
+          "Please specify the mensa, for which you want to get the menu."
+        );
+      }
       ResultSet mensas;
       if (city != null) {
         mensas = findMensas(mensa, city);
       } else {
         mensas = findMensas(mensa);
       }
-
-      if (!mensas.next()) throw new ChatException(
-        "Sorry, I could not find a mensa with that name. 💁"
+      JSONObject mensaObj = selectMensa(mensas);
+      String menu = createMenuChatResponse(
+        mensaObj.getAsString("name"),
+        mensaObj.getAsNumber("id").intValue()
       );
-
-      String first = mensas.getString("name"); // first entry
-      id = mensas.getInt("id");
-      String response =
-        "I found the following mensas for " + mensa + ": \n1. " + first + "\n";
-
-      int i = 2;
-      while (mensas.next() && i < maxEntries) { //at least 2 entries
-        response += i + ". " + mensas.getString("name") + "\n";
-        i++;
-      }
-      switch (i) {
-        case 2:
-          String menu = createMenuChatResponse(first, id);
-          response = menu;
-          break;
-        case maxEntries:
-          mensas.last();
-          int total = mensas.getRow();
-          if (total - maxEntries > 0) {
-            response += "and " + (total - maxEntries) + " more...\n";
-            response +=
-              "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
-          }
-          break;
-      }
-      chatResponse.appendField("text", response);
+      chatResponse.appendField("text", menu);
+      context.put("selected_mensa", mensaObj);
+      ContextInfo.put(channelId, context.toJSONString());
       return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
@@ -461,6 +448,133 @@ public class MensaService extends RESTService {
       response = e.getMessage();
     }
     return Response.ok().entity(response).build();
+  }
+
+  @POST
+  @Path("/prepareReview")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response prepareReview(String body) {
+    System.out.println(body);
+    JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
+    JSONObject context;
+    JSONObject chatResponse = new JSONObject();
+
+    try {
+      JSONObject json = (JSONObject) p.parse(body);
+      String channelId = json.getAsString("channel");
+      context = getContext(channelId, p);
+      String mensa = json.getAsString("mensa");
+      String category = json.getAsString("category");
+      if (category.equals(null)) {
+        throw new ChatException(
+          "I could not determine the category of your dish 🙁"
+        );
+      }
+
+      if (mensa.equals(null)) {
+        JSONObject mensaObj = (JSONObject) context.get("selected_mensa"); //check if a mensa was previously selected (e.g when getting the menu)
+        if (mensaObj.equals(null)) {
+          mensaObj = (JSONObject) context.get("default_mensa"); //check if default mensa has been set
+          if (mensaObj == null) {
+            throw new ChatException(
+              "I could not determine the mensa, you visited 🙁"
+            );
+          }
+        }
+        mensa = mensaObj.getAsString("name");
+      }
+      ResultSet mensas = findMensas(mensa);
+      JSONObject mensaObj = selectMensa(mensas);
+      context.put("selected_mensa", mensaObj); //save the mensa obj in context for further lookups in add rating process
+
+      JSONObject dish = extractDishFromMenu(
+        mensaObj.getAsNumber("id").intValue(),
+        category
+      );
+      context.put("selected_dish", dish); //save the dish obj in context for further lookups in add rating process
+      chatResponse.appendField(
+        "text",
+        "You ate " +
+        dish.getAsString("name") +
+        " at " +
+        mensaObj.getAsString("name") +
+        ".\n Is this correct?"
+      );
+
+      ContextInfo.put(channelId, context.toJSONString()); //save context
+    } catch (ChatException e) {
+      chatResponse.appendField("text", e.getMessage());
+    } catch (Exception e) {
+      e.printStackTrace();
+      chatResponse.appendField("text", "Sorry, a problem occured 🙁");
+    }
+    return Response.ok().entity(chatResponse).build();
+  }
+
+  @POST
+  @Path("/submitReview")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response submitReview(String body) {
+    System.out.println(body);
+    JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
+    JSONObject context;
+    JSONObject chatResponse = new JSONObject();
+
+    try {
+      JSONObject json = (JSONObject) p.parse(body);
+      String channelId = json.getAsString("channel");
+      context = getContext(channelId, p);
+      Integer stars = json.getAsNumber("stars").intValue();
+      System.out.println("stars value: " + stars);
+      if (stars.equals(null) || stars < 0 || stars > 5) {
+        throw new ChatException("Stars must be between 0 and 5");
+      }
+
+      String comment = json.getAsString("msg");
+      System.out.println("User comment: " + comment);
+      String author = json.getAsString("email");
+      System.out.println("Author: " + author);
+      JSONObject dish = (JSONObject) context.get("selected_dish");
+      Integer dishId = dish.getAsNumber("id").intValue();
+      JSONObject mensa = (JSONObject) context.get("selected_mensa");
+      Integer mensaId = mensa.getAsNumber("id").intValue();
+
+      if (dishId.equals(null)) {
+        throw new ChatException(
+          "Sorry, I could not find the dish, you selected earlier, in my records 🙁"
+        );
+      }
+
+      if (mensaId.equals(null)) {
+        throw new ChatException(
+          "Sorry, I could not find the mensa, you selected earlier, in my records 🙁"
+        );
+      }
+      JSONObject rating = new JSONObject();
+      rating.put("author", author);
+      rating.put("mensaId", mensaId);
+      rating.put("stars", stars);
+      rating.put("comment", comment);
+      System.out.println("rating for submission: \n" + rating.toJSONString());
+
+      Response res = addRating(dishId.intValue(), rating.toJSONString());
+      if (res.getStatus() == 200) {
+        chatResponse.appendField(
+          "text",
+          "Alright I saved your review. Thanks for providing your feedback 😊"
+        );
+      } else {
+        chatResponse.appendField("text", "Oh no, something went wrong 🙁");
+      }
+    } catch (ChatException e) {
+      chatResponse.appendField("text", e.getMessage());
+    } catch (Exception e) {
+      e.printStackTrace();
+      chatResponse.appendField("text", "Sorry, a problem occured 🙁");
+    }
+    return Response.ok().entity(chatResponse).build();
   }
 
   /**
@@ -853,7 +967,7 @@ public class MensaService extends RESTService {
    * @param menu the menu of dishes that should be saver
    */
   private void saveDishesToIndex(JSONArray menu, int mensaId) {
-    Date lastUpdate = this.lastDishUpdate.get(mensaId);
+    Date lastUpdate = this.lastDishUpdate.get((Integer) mensaId);
     System.out.println("Last dish update: " + lastUpdate);
     if (
       lastUpdate != null &&
@@ -863,7 +977,7 @@ public class MensaService extends RESTService {
       return;
     }
     System.out.println("Saving dishes to index...");
-    lastDishUpdate.put(mensaId, new Date());
+    lastDishUpdate.put((Integer) mensaId, new Date());
     try {
       Connection con = getDatabaseConnection();
       menu.forEach(
@@ -991,6 +1105,64 @@ public class MensaService extends RESTService {
     MensaService service = (MensaService) Context.get().getService();
 
     return service.database.getDataSource().getConnection();
+  }
+
+  /**
+   * function which extracts the mensa from a resultset. If more than one row are provided a Chatexception is thrown
+   * @param mensas Resultset containing the mensas as rows
+   * @return Object containing the name and id of the mensa
+   * @throws ChatException the error message contains a list of mensas in the set
+   * @throws SQLException thrown if a db error occured
+   */
+  private JSONObject selectMensa(ResultSet mensas)
+    throws ChatException, SQLException {
+    JSONObject mensa = new JSONObject();
+
+    if (!mensas.next()) throw new ChatException(
+      "Sorry, I could not find a mensa with that name. 💁"
+    );
+
+    String first = mensas.getString("name"); // first entry
+    int id = mensas.getInt("id");
+    String response =
+      "I found the following mensas for " + mensa + ": \n1. " + first + "\n";
+
+    int i = 2;
+    while (mensas.next() && i < maxEntries) { //at least 2 entries
+      response += i + ". " + mensas.getString("name") + "\n";
+      i++;
+    }
+    if (i == 2) {
+      mensa.put("name", first);
+      mensa.put("id", id);
+      return mensa;
+    } else if (i == maxEntries) {
+      mensas.last();
+      int total = mensas.getRow();
+      response += "and " + (total - maxEntries) + " more...\n";
+      response +=
+        "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
+    }
+    throw new ChatException(response);
+  }
+
+  private JSONObject getContext(String channelId, JSONParser p)
+    throws ParseException {
+    String obj = ContextInfo.get(channelId);
+    if (obj != null) {
+      return (JSONObject) p.parse(obj);
+    }
+    return new JSONObject();
+  }
+
+  private JSONObject extractDishFromMenu(int mensaId, String catgeory)
+    throws IOException, ChatException {
+    JSONArray menu = getMensaMenu(mensaId);
+    for (Object item : menu) {
+      JSONObject obj = (JSONObject) item;
+      if (obj.getAsString("category").matches(catgeory)) return obj;
+    }
+    throw new ChatException("Could not find a dish for " + catgeory);
   }
 
   // hard coded IDs of mensas in Aachen
