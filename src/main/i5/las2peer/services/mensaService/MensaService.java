@@ -3,8 +3,6 @@ package i5.las2peer.services.mensaService;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
-import i5.las2peer.api.security.Agent;
-import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
 import i5.las2peer.services.mensaService.database.SQLDatabase;
@@ -54,7 +52,6 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
-import org.apache.commons.io.filefilter.RegexFileFilter;
 
 /**
  * las2peer-Mensa-Service
@@ -988,7 +985,7 @@ public class MensaService extends RESTService {
    * @param menu the menu of dishes that should be saver
    */
   private void saveDishesToIndex(JSONArray menu, int mensaId) {
-    Date lastUpdate = this.lastDishUpdate.get((Integer) mensaId);
+    Date lastUpdate = lastDishUpdate.get((Integer) mensaId);
     System.out.println("Last dish update: " + lastUpdate);
     if (
       lastUpdate != null &&
