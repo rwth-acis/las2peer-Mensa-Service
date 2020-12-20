@@ -884,7 +884,7 @@ public class MensaService extends RESTService {
           "SELECT * FROM mensas WHERE name LIKE ? AND city LIKE ?"
         );
       statement.setString(1, "%" + mensaName + "%");
-      statement.setString(1, city);
+      statement.setString(2, city);
       res = statement.executeQuery();
       return res;
     } catch (Exception e) {
@@ -1139,8 +1139,7 @@ public class MensaService extends RESTService {
 
     String first = mensas.getString("name"); // first entry
     int id = mensas.getInt("id");
-    String response =
-      "I found the following mensas for " + mensa + ": \n1. " + first + "\n";
+    String response = "I found the following mensas: \n1. " + first + "\n";
 
     int i = 2;
     while (mensas.next() && i < maxEntries) { //at least 2 entries
@@ -1158,6 +1157,7 @@ public class MensaService extends RESTService {
       response +=
         "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
     }
+    response += "Please specify your mensa.";
     throw new ChatException(response);
   }
 
