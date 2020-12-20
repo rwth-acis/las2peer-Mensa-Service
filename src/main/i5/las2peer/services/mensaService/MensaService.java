@@ -90,10 +90,10 @@ public class MensaService extends RESTService {
   private static final String OPEN_MENSA_API_ENDPOINT =
     "https://openmensa.org/api/v2";
 
-  private HashMap<Integer, Date> lastDishUpdate;
-  private Date lastMensasUpdate;
-  private HashMap<String, String> ContextInfo;
-  final int maxEntries = 20;
+  private static HashMap<Integer, Date> lastDishUpdate = new HashMap<>();
+  private static Date lastMensasUpdate;
+  private static HashMap<String, String> ContextInfo = new HashMap<String, String>();
+  private final int maxEntries = 20;
 
   private String databaseName;
   private int databaseTypeInt = 1;
@@ -121,8 +121,7 @@ public class MensaService extends RESTService {
     super();
     setFieldValues();
     this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
-    this.lastDishUpdate = new HashMap<>();
-    this.ContextInfo = new HashMap<>();
+
     this.database =
       new SQLDatabase(
         this.databaseType,
@@ -244,7 +243,6 @@ public class MensaService extends RESTService {
     System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
-    int id;
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -271,7 +269,7 @@ public class MensaService extends RESTService {
         mensaObj.getAsNumber("id").intValue()
       );
       chatResponse.appendField("text", menu);
-      context.put("selected_mensa", mensaObj);
+      context.put("selected_mensa", mensaObj.getAsNumber("id"));
       ContextInfo.put(channelId, context.toJSONString());
       return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
@@ -455,7 +453,6 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
-    System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject context;
     JSONObject chatResponse = new JSONObject();
@@ -466,13 +463,28 @@ public class MensaService extends RESTService {
       context = getContext(channelId, p);
       String mensa = json.getAsString("mensa");
       String category = json.getAsString("category");
-      if (category.equals(null)) {
+      Number stars = json.getAsNumber("stars");
+
+      if (stars != null) { //This is the seconde step, where the user is specifiying how many stars he gives the dish
+        int s = stars.intValue();
+
+        if (s < 0 || s > 5) {
+          throw new ChatException("Stars must be between 0 and 5");
+        }
+        context.put("stars", s);
+        ContextInfo.put(channelId, context.toJSONString());
+        return Response.ok().build();
+      }
+
+      //The first step is to find out which canteeen the user visited and what meal he ate
+
+      if (category == (null)) {
         throw new ChatException(
           "I could not determine the category of your dish 🙁"
         );
       }
 
-      if (mensa.equals(null)) {
+      if (mensa == (null)) {
         JSONObject mensaObj = (JSONObject) context.get("selected_mensa"); //check if a mensa was previously selected (e.g when getting the menu)
         if (mensaObj.equals(null)) {
           mensaObj = (JSONObject) context.get("default_mensa"); //check if default mensa has been set
@@ -486,13 +498,12 @@ public class MensaService extends RESTService {
       }
       ResultSet mensas = findMensas(mensa);
       JSONObject mensaObj = selectMensa(mensas);
-      context.put("selected_mensa", mensaObj); //save the mensa obj in context for further lookups in add rating process
-
+      context.put("selected_mensa", mensaObj.getAsNumber("id").intValue()); //save the mensa obj in context for later lookup on submitReview
       JSONObject dish = extractDishFromMenu(
         mensaObj.getAsNumber("id").intValue(),
         category
       );
-      context.put("selected_dish", dish); //save the dish obj in context for further lookups in add rating process
+      context.put("selected_dish", dish.getAsNumber("id").intValue()); //save the dish obj in context for later lookup on submitReview
       chatResponse.appendField(
         "text",
         "You ate " +
@@ -517,7 +528,6 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response submitReview(String body) {
-    System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject context;
     JSONObject chatResponse = new JSONObject();
@@ -526,47 +536,52 @@ public class MensaService extends RESTService {
       JSONObject json = (JSONObject) p.parse(body);
       String channelId = json.getAsString("channel");
       context = getContext(channelId, p);
-      Integer stars = json.getAsNumber("stars").intValue();
-      System.out.println("stars value: " + stars);
-      if (stars.equals(null) || stars < 0 || stars > 5) {
-        throw new ChatException("Stars must be between 0 and 5");
+
+      String comment = null;
+      boolean containsComment =
+        !("noComment".equals(json.getAsString("intent")));
+      if (containsComment) {
+        comment = json.getAsString("msg");
       }
-
-      String comment = json.getAsString("msg");
-      System.out.println("User comment: " + comment);
       String author = json.getAsString("email");
-      System.out.println("Author: " + author);
-      JSONObject dish = (JSONObject) context.get("selected_dish");
-      Integer dishId = dish.getAsNumber("id").intValue();
-      JSONObject mensa = (JSONObject) context.get("selected_mensa");
-      Integer mensaId = mensa.getAsNumber("id").intValue();
 
-      if (dishId.equals(null)) {
+      Number dishId = context.getAsNumber("selected_dish"); // specified when prepareReview was called
+      Number mensaId = context.getAsNumber("selected_mensa"); // specified when prepareReview was called
+      Number starsFromContext = context.getAsNumber("stars"); // specified when prepareReview was called
+
+      if (dishId == null) {
         throw new ChatException(
           "Sorry, I could not find the dish, you selected earlier, in my records 🙁"
         );
       }
 
-      if (mensaId.equals(null)) {
+      if (mensaId == null) {
         throw new ChatException(
           "Sorry, I could not find the mensa, you selected earlier, in my records 🙁"
         );
       }
+
+      if (starsFromContext == null) {
+        throw new ChatException(
+          "Sorry, I could not find the stars, you selected earlier, in my records 🙁"
+        );
+      }
+
       JSONObject rating = new JSONObject();
       rating.put("author", author);
-      rating.put("mensaId", mensaId);
-      rating.put("stars", stars);
+      rating.put("mensaId", mensaId.intValue());
+      rating.put("stars", starsFromContext.intValue());
       rating.put("comment", comment);
-      System.out.println("rating for submission: \n" + rating.toJSONString());
 
       Response res = addRating(dishId.intValue(), rating.toJSONString());
+
       if (res.getStatus() == 200) {
         chatResponse.appendField(
           "text",
           "Alright I saved your review. Thanks for providing your feedback 😊"
         );
       } else {
-        chatResponse.appendField("text", "Oh no, something went wrong 🙁");
+        throw new Exception(res.getEntity().toString());
       }
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
@@ -1149,6 +1164,7 @@ public class MensaService extends RESTService {
   private JSONObject getContext(String channelId, JSONParser p)
     throws ParseException {
     String obj = ContextInfo.get(channelId);
+    System.out.println("contex for channel " + channelId + ": " + obj);
     if (obj != null) {
       return (JSONObject) p.parse(obj);
     }
@@ -1160,7 +1176,10 @@ public class MensaService extends RESTService {
     JSONArray menu = getMensaMenu(mensaId);
     for (Object item : menu) {
       JSONObject obj = (JSONObject) item;
-      if (obj.getAsString("category").matches(catgeory)) return obj;
+
+      if (
+        obj.getAsString("category").matches("(?i).*" + catgeory + ".*")
+      ) return obj;
     }
     throw new ChatException("Could not find a dish for " + catgeory);
   }
