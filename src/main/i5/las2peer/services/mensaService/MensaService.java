@@ -775,21 +775,6 @@ public class MensaService extends RESTService {
   }
 
   /**
-   * checks wether a given mensa is supported
-   * @param mensa name of the mensa
-   * @return true if the mensa exists in the database
-   */
-  private boolean isMensaSupported(String mensa) {
-    try {
-      ResultSet res = findMensas(mensa);
-      return res.next(); //true if at least one entry matches the input
-    } catch (Exception e) {
-      e.printStackTrace();
-      return false;
-    }
-  }
-
-  /**
    * Command management for Slack.
    *
    * @param form Parameters provided by the slash command.
@@ -1215,6 +1200,20 @@ public class MensaService extends RESTService {
     }
   }
 
+  //   /**
+  //  * checks wether a given mensa is supported
+  //  * @param mensa name of the mensa
+  //  * @return true if the mensa exists in the database
+  //  */
+  // private boolean isMensaSupported(String mensa) {
+  //   try {
+  //     ResultSet res = findMensas(mensa);
+  //     return res.next(); //true if at least one entry matches the input
+  //   } catch (Exception e) {
+  //     e.printStackTrace();
+  //     return false;
+  //   }
+  // }
   // private static class Rating implements Serializable {
 
   //   /**
