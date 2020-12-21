@@ -18,11 +18,13 @@ import javax.ws.rs.core.MediaType;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
+import org.yaml.snakeyaml.parser.ParserException;
 
 /**
  * Example Test Class demonstrating a basic JUnit test structure.
@@ -185,7 +187,7 @@ public class ServiceTest {
   //   Assert.assertEquals(200, response.getHttpCode());
   // }
   /**
-   * Test to add a rating for a dish.
+   * Test get all dishes.
    */
   @Test
   public void testGetDishes() throws JSONException {
@@ -225,11 +227,43 @@ public class ServiceTest {
   //   JSONAssert.assertEquals(expectedJSON, response.getResponse(), true);
   // }
 
+  // only use this test if removeRating does not work.
+  // /**
+  //  * Test to add a rating for a dish.
+  //  */
+  // @Test
+  // public void testAddRating() throws JSONException {
+  //   // given
+  //   System.out.println("Adding rating");
+  //   MiniClient client = getClient();
+  //   // when
+  //   ClientResponse response = postRating(
+  //     client,
+  //     SOME_DISH_ID,
+  //     STARS,
+  //     SOME_MENSA,
+  //     SOME_COMMENT,
+  //     testAgent.getLoginName()
+  //   );
+
+  //   // then
+  //   String expectedJSON = String.format(
+  //     "{\"dish\": \"%s\",\"mensaId\": %s,\"stars\": %s,\"comment\": \"%s\", \"author\": \"%s\"}",
+  //     this.SOME_DISH,
+  //     String.valueOf(this.getMensaId(this.SOME_MENSA)),
+  //     this.STARS,
+  //     this.SOME_COMMENT,
+  //     testAgent.getLoginName()
+  //   );
+  //   Assert.assertEquals(200, response.getHttpCode());
+  //   JSONAssert.assertEquals(expectedJSON, response.getResponse(), false);
+  // }
+
   /**
-   * Test to add a rating for a dish.
+   * Test to add and remove a rating for a dish.
    */
   @Test
-  public void testAddRating() throws JSONException {
+  public void testAddAndRemoveRating() throws JSONException {
     // given
     System.out.println("Adding rating");
     MiniClient client = getClient();
@@ -254,6 +288,17 @@ public class ServiceTest {
     );
     Assert.assertEquals(200, response.getHttpCode());
     JSONAssert.assertEquals(expectedJSON, response.getResponse(), false);
+
+    try {
+      System.out.println(response.getResponse());
+      JSONTokener obj = new JSONTokener(response.getResponse());
+      JSONObject json = new JSONObject(obj);
+      int dishId = json.getInt("reviewId");
+      removeRating(client, dishId);
+      Assert.assertEquals(200, response.getHttpCode());
+    } catch (Exception e) {
+      Assert.fail("parse failed " + e.getMessage());
+    }
   }
 
   // /**
@@ -330,6 +375,17 @@ public class ServiceTest {
       MediaType.APPLICATION_JSON,
       MediaType.APPLICATION_JSON,
       new HashMap<String, String>()
+    );
+  }
+
+  private ClientResponse removeRating(MiniClient client, int dishId) {
+    return client.sendRequest(
+      "GET",
+      mainPath + "dishes" + dishId,
+      "",
+      MediaType.TEXT_PLAIN,
+      MediaType.TEXT_PLAIN,
+      new HashMap<>()
     );
   }
 
