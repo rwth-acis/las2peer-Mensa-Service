@@ -38,7 +38,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -151,7 +150,7 @@ public class MensaService extends RESTService {
       "# Menu Queried for Mensa\n" +
       "## Format\n" +
       "```json\n" +
-      "{ msg: \"<name of mensa>\"}\n" +
+      "{ msg: \"<id of mensa>\"}\n" +
       "```\n" +
       "\n" +
       "## Examples\n" +
@@ -162,17 +161,18 @@ public class MensaService extends RESTService {
       "#### Visualization\n" +
       "Bar chart or pie chart.\n"
     );
-    descriptions.put(
-      "SERVICE_CUSTOM_MESSAGE_2",
-      "Menu queried for language. Format: Language in lang-country format."
-    );
+    //no more options to specify the language menu is returned in local language
+    // descriptions.put(
+    //   "SERVICE_CUSTOM_MESSAGE_2",
+    //   "Menu queried for language. Format: Language in lang-country format."
+    // );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_3",
-      "Ratings queried for dish. Format: Name of dish."
+      "Ratings queried for dish. Format: id of dish."
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_4",
-      "Rating added for dish. Format: Name of dish."
+      "Rating added for dish. Format: id of dish."
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_5",
@@ -200,7 +200,7 @@ public class MensaService extends RESTService {
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_40",
-      "Time in ms to get return the menu. Format: Time is ms."
+      "Time in ms to return the menu. Format: Time is ms."
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_41",
@@ -210,7 +210,10 @@ public class MensaService extends RESTService {
       "SERVICE_CUSTOM_MESSAGE_42",
       "Time in ms to get return the pictures for a dish. Format: Time is ms."
     );
-    descriptions.put("SERVICE_CUSTOM_MESSAGE_43", "update Dish index");
+    descriptions.put(
+      "SERVICE_CUSTOM_MESSAGE_43",
+      "update Dish index. Format: Time in ms"
+    );
     return descriptions;
   }
 
@@ -237,7 +240,6 @@ public class MensaService extends RESTService {
     }
   )
   public Response getMenu(String body) {
-    System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
 
@@ -261,6 +263,12 @@ public class MensaService extends RESTService {
         mensas = findMensas(mensa);
       }
       JSONObject mensaObj = selectMensa(mensas);
+      Context
+        .get()
+        .monitorEvent(
+          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1,
+          mensaObj.getAsString("id")
+        );
       String menu = createMenuChatResponse(
         mensaObj.getAsString("name"),
         mensaObj.getAsNumber("id").intValue()
@@ -304,7 +312,6 @@ public class MensaService extends RESTService {
   )
   public Response getMensa(
     @PathParam("id") int id,
-    @HeaderParam("accept-language") @DefaultValue("de-de") String language,
     @QueryParam("format") @DefaultValue("html") String format
   ) {
     final long responseStart = System.currentTimeMillis();
@@ -312,11 +319,10 @@ public class MensaService extends RESTService {
     JSONArray mensaMenu;
     String returnString;
 
-    // Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1, id);
-    // Context
-    //   .get()
-    //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_2, language);
-    //TODO: adjust monitoring message
+    Context
+      .get()
+      .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1, "" + id);
+
     try {
       mensaMenu = getMensaMenu(id);
 
@@ -407,7 +413,9 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response getRatings(@PathParam("id") int id) {
-    System.out.println("Getting ratings for dish with id " + id);
+    Context
+      .get()
+      .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, id + "");
     Object response = null;
     final long responseStart = System.currentTimeMillis();
 
@@ -615,16 +623,12 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response addRating(@PathParam("id") int id, String rating) {
-    System.out.println("Got a review: " + rating);
+    long start = System.currentTimeMillis();
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject response = new JSONObject();
     try {
       response = (JSONObject) p.parse(rating);
       response.appendField("dishId", id);
-      // Context
-      //   .get()
-      //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
-      //TODO: change monitoring event
 
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
@@ -659,14 +663,23 @@ public class MensaService extends RESTService {
       s.setDate(4, new java.sql.Date(System.currentTimeMillis()));
       s.setInt(5, (Integer) response.getAsNumber("stars"));
       s.setString(6, response.getAsString("comment"));
-      System.out.print(s);
-
       s.execute();
       ResultSet rs = s.getGeneratedKeys();
+
       if (rs.next()) {
         response.appendField("reviewId", rs.getInt(1));
         s.close();
         con.close();
+
+        Context
+          .get()
+          .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, id + "");
+        Context
+          .get()
+          .monitorEvent(
+            MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+            "" + (System.currentTimeMillis() - start)
+          );
         return Response.ok().entity(response).build();
       } else {
         s.close();
@@ -697,14 +710,6 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response deleteRating(@PathParam("id") int id) {
-    System.out.println("Deleting rating with id " + id);
-    // Context
-    //   .get()
-    //   .monitorEvent(
-    //     MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5,
-    //     String.valueOf(dish)
-    //   );
-    //TODO: replace the monitoring message
     try {
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
@@ -714,6 +719,13 @@ public class MensaService extends RESTService {
       s.executeUpdate();
       s.close();
       con.close();
+      Context
+        .get()
+        .monitorEvent(
+          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5,
+          String.valueOf(id)
+        );
+
       return Response.ok().build();
     } catch (SQLException e) {
       e.printStackTrace();
@@ -798,8 +810,7 @@ public class MensaService extends RESTService {
     String text = form.getFirst("text");
     String response = "";
     if (cmd.equals("/mensa")) {
-      response =
-        (String) getMensa(getMensaId(text), "de-de", "html").getEntity();
+      response = (String) getMensa(getMensaId(text), "html").getEntity();
       Context
         .get()
         .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
@@ -913,6 +924,12 @@ public class MensaService extends RESTService {
       URLConnection con = url.openConnection();
       con.addRequestProperty("Content-type", "application/json");
       menu = (JSONArray) jsonParser.parse(con.getInputStream());
+      Context
+        .get()
+        .monitorEvent(
+          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10,
+          menu.toString()
+        );
     } catch (ParseException e) {
       e.printStackTrace();
     } catch (IOException e) {
@@ -971,15 +988,20 @@ public class MensaService extends RESTService {
    */
   private void saveDishesToIndex(JSONArray menu, int mensaId) {
     Date lastUpdate = lastDishUpdate.get((Integer) mensaId);
-    System.out.println("Last dish update: " + lastUpdate);
+
     if (
       lastUpdate != null &&
       Math.abs(lastUpdate.getTime() - new Date().getTime()) < SIX_HOURS_IN_MS
     ) {
-      System.out.println("No need to update dishes");
       return;
     }
     System.out.println("Saving dishes to index...");
+    Context
+      .get()
+      .monitorEvent(
+        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_43,
+        System.currentTimeMillis() + ""
+      );
     lastDishUpdate.put((Integer) mensaId, new Date());
     try {
       Connection con = getDatabaseConnection();
