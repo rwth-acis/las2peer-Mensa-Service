@@ -279,12 +279,11 @@ public class ServiceTest {
 
     // then
     String expectedJSON = String.format(
-      "{\"dish\": \"%s\",\"mensaId\": %s,\"stars\": %s,\"comment\": \"%s\", \"author\": \"%s\"}",
-      this.SOME_DISH,
-      String.valueOf(this.getMensaId(this.SOME_MENSA)),
-      this.STARS,
+      "{\"author\": \"%s\",\"comment\": \"%s\",\"mensaId\": %s,\"stars\": %s}",
+      testAgent.getLoginName(),
       this.SOME_COMMENT,
-      testAgent.getLoginName()
+      String.valueOf(this.getMensaId(SOME_MENSA)),
+      this.STARS
     );
     Assert.assertEquals(200, response.getHttpCode());
     JSONAssert.assertEquals(expectedJSON, response.getResponse(), false);
@@ -292,9 +291,11 @@ public class ServiceTest {
     try {
       System.out.println(response.getResponse());
       JSONTokener obj = new JSONTokener(response.getResponse());
+
       JSONObject json = new JSONObject(obj);
-      int dishId = json.getInt("reviewId");
-      removeRating(client, dishId);
+      System.out.println(json);
+      int id = json.getInt("id");
+      removeRating(client, id);
       Assert.assertEquals(200, response.getHttpCode());
     } catch (Exception e) {
       Assert.fail("parse failed " + e.getMessage());

@@ -430,6 +430,7 @@ public class MensaService extends RESTService {
       ResultSet res = s.executeQuery();
       while (res.next()) {
         review = new JSONObject();
+        review.put("id", res.getInt("reviews.id"));
         review.put("mensa", res.getString("mensas.name"));
         review.put("stars", res.getInt("stars"));
         review.put("comment", res.getString("comment"));
@@ -437,7 +438,7 @@ public class MensaService extends RESTService {
         review.put("timestamp", res.getDate("timestamp").toString());
         reviews.add(review);
       }
-      System.out.println(reviews);
+
       response = reviews;
       Context
         .get()
@@ -667,7 +668,7 @@ public class MensaService extends RESTService {
       ResultSet rs = s.getGeneratedKeys();
 
       if (rs.next()) {
-        response.appendField("reviewId", rs.getInt(1));
+        response.appendField("id", rs.getInt(1));
         s.close();
         con.close();
 
@@ -710,6 +711,7 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response deleteRating(@PathParam("id") int id) {
+    System.out.println("deleting review with id " + id);
     try {
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
@@ -1010,7 +1012,13 @@ public class MensaService extends RESTService {
       menu.forEach(
         menuitem -> {
           try {
-            addDishEntry((JSONObject) menuitem, con, mensaId);
+            JSONObject json = (JSONObject) menuitem;
+            if (
+              !json.containsValue("geschlossen") &&
+              !json.containsValue("closed")
+            ) {
+              addDishEntry(json, con, mensaId);
+            }
           } catch (SQLException e) {
             e.printStackTrace();
           }
