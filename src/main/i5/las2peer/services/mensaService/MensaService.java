@@ -383,12 +383,13 @@ public class MensaService extends RESTService {
     try {
       Connection con = getDatabaseConnection();
       ResultSet res = con
-        .prepareStatement("SELECT DISTINCT name,id FROM dishes")
+        .prepareStatement("SELECT DISTINCT name,id,category FROM dishes")
         .executeQuery();
       while (res.next()) {
         dish = new JSONObject();
         dish.appendField("name", res.getString("name"));
         dish.appendField("id", res.getInt("id"));
+        dish.appendField("category", res.getString("category"));
         dishes.add(dish);
       }
       con.close();
