@@ -292,7 +292,7 @@ public class MensaService extends RESTService {
    *
    * @param id    Id of a canteen supported by the OpenMensa API.
    * @param format Format in which the menu should be returned (json or html)
-   * @param language The user's language.
+   *
    * @return Returns a String containing the menu.
    */
   @GET
@@ -951,32 +951,34 @@ public class MensaService extends RESTService {
       JSONObject menuItem = (JSONObject) o;
       String type = menuItem.getAsString("category");
       String dish = menuItem.getAsString("name");
-      if (type.equals("Tellergericht") || type.contains("Entrée")) {
-        returnString += "🍽 " + type + ": " + dish + "\n";
-      } else if (type.equals("Vegetarisch") || type.contains("Végétarien")) {
-        returnString += "🥗 " + type + ": " + dish + "\n";
-      } else if (type.equals("Klassiker") || type.contains("Protidique")) {
-        returnString += "👨🏻‍🍳 " + type + ": " + dish + "\n";
-      } else if (type.equals("Empfehlung des Tages")) {
-        returnString += "👌🏿👨🏿‍🍳 " + type + ": " + dish + "\n";
-      } else if (type.equals("Wok")) {
-        returnString += "🥘 " + type + ": " + dish + "\n";
-      } else if (type.equals("Ofenkartoffel")) {
-        returnString += "🥔 " + type + ": " + dish + "\n";
-      } else if (type.equals("Pasta")) {
-        returnString += "🍝 " + type + ": " + dish + "\n";
-      } else if (type.contains("Pizza")) {
-        returnString += "🍕 " + type + ": " + dish + "\n";
-      } else if (type.contains("Grill")) {
-        returnString += "🥩 " + type + ": " + dish + "\n";
-      } else if (type.contains("Burger")) {
-        returnString += "🍔 " + type + ": " + dish + "\n";
-      } else if (type.contains("Sandwich")) {
-        returnString += "🥪 " + type + ": " + dish + "\n";
-      } else if (type.contains("Flammengrill")) {
-        returnString += "🔥 " + type + ": " + dish + "\n";
-      } else {
-        returnString += type + ": " + dish + "\n";
+      if (!"geschlossen".equals(dish) && !"closed".equals(dish)) {
+        if (type.equals("Tellergericht") || type.contains("Entrée")) {
+          returnString += "🍽 " + type + ": " + dish + "\n";
+        } else if (type.equals("Vegetarisch") || type.contains("Végétarien")) {
+          returnString += "🥗 " + type + ": " + dish + "\n";
+        } else if (type.equals("Klassiker") || type.contains("Protidique")) {
+          returnString += "👨🏻‍🍳 " + type + ": " + dish + "\n";
+        } else if (type.equals("Empfehlung des Tages")) {
+          returnString += "👌🏿👨🏿‍🍳 " + type + ": " + dish + "\n";
+        } else if (type.equals("Wok")) {
+          returnString += "🥘 " + type + ": " + dish + "\n";
+        } else if (type.equals("Ofenkartoffel")) {
+          returnString += "🥔 " + type + ": " + dish + "\n";
+        } else if (type.equals("Pasta")) {
+          returnString += "🍝 " + type + ": " + dish + "\n";
+        } else if (type.contains("Pizza")) {
+          returnString += "🍕 " + type + ": " + dish + "\n";
+        } else if (type.contains("Grill")) {
+          returnString += "🥩 " + type + ": " + dish + "\n";
+        } else if (type.contains("Burger")) {
+          returnString += "🍔 " + type + ": " + dish + "\n";
+        } else if (type.contains("Sandwich")) {
+          returnString += "🥪 " + type + ": " + dish + "\n";
+        } else if (type.contains("Flammengrill")) {
+          returnString += "🔥 " + type + ": " + dish + "\n";
+        } else {
+          returnString += type + ": " + dish + "\n";
+        }
       }
     }
     returnString += "___\n";
