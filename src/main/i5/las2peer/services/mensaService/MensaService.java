@@ -140,6 +140,7 @@ public class MensaService extends RESTService {
   protected void initResources() {
     super.initResources();
     getResourceConfig().register(PrematchingRequestFilter.class);
+    getResourceConfig().register(PrematchingResponseFilter.class);
   }
 
   @Override
