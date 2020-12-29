@@ -6,15 +6,16 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.ext.Provider;
 
-/**
- * Refresh available dishes if necessary before actually processing the request.
- */
 @Provider
 @PreMatching
 public class PrematchingRequestFilter implements ContainerRequestFilter {
 
+  /**
+   * Gets called before the service starts processing the request
+   */
   @Override
   public void filter(ContainerRequestContext ctx) {
+    ctx.setProperty("timestamp", System.currentTimeMillis());
     MensaService service = (MensaService) Context.getCurrent().getService();
     service.fetchMensas();
   }
