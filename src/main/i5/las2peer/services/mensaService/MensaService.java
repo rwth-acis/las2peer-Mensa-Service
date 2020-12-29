@@ -252,8 +252,6 @@ public class MensaService extends RESTService {
   public Response getMenu(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -291,19 +289,6 @@ public class MensaService extends RESTService {
       chatResponse.appendField("text", menu);
       context.put("selected_mensa", mensaObj);
       ContextInfo.put(channelId, context.toJSONString());
-
-      monitorJsonObject.appendField("method", "getMenu");
-      monitorJsonObject.appendField(
-        "time",
-        System.currentTimeMillis() - responseStart
-      );
-
-      Context
-        .get()
-        .monitorEvent(
-          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-          monitorJsonObject.toJSONString()
-        );
 
       return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
@@ -343,9 +328,6 @@ public class MensaService extends RESTService {
     @PathParam("id") int id,
     @QueryParam("format") @DefaultValue("html") String format
   ) {
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
-
     JSONArray mensaMenu;
     String returnString;
 
@@ -400,18 +382,6 @@ public class MensaService extends RESTService {
         responseContentType = MediaType.APPLICATION_JSON;
     }
 
-    monitorJsonObject.appendField("method", "getMensa");
-    monitorJsonObject.appendField(
-      "time",
-      System.currentTimeMillis() - responseStart
-    );
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-        monitorJsonObject.toJSONString()
-      );
-
     return Response.ok().type(responseContentType).entity(returnString).build();
   }
 
@@ -427,8 +397,6 @@ public class MensaService extends RESTService {
   public Response getDishes() {
     JSONArray dishes = new JSONArray();
     JSONObject dish;
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
 
     try {
       Connection con = getDatabaseConnection();
@@ -444,19 +412,6 @@ public class MensaService extends RESTService {
         dishes.add(dish);
       }
       con.close();
-
-      monitorJsonObject.appendField("method", "getDishes");
-      monitorJsonObject.appendField(
-        "time",
-        System.currentTimeMillis() - responseStart
-      );
-
-      Context
-        .get()
-        .monitorEvent(
-          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-          monitorJsonObject.toJSONString()
-        );
 
       return Response.ok().entity(dishes).build();
     } catch (Exception e) {
@@ -491,9 +446,6 @@ public class MensaService extends RESTService {
         String.valueOf(id)
       );
 
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
-
     try { //get Ratings from distributed storage
       JSONArray reviews = new JSONArray();
       JSONObject review;
@@ -515,19 +467,6 @@ public class MensaService extends RESTService {
       }
 
       con.close();
-
-      monitorJsonObject.appendField("method", "getRatings");
-      monitorJsonObject.appendField(
-        "time",
-        System.currentTimeMillis() - responseStart
-      );
-
-      Context
-        .get()
-        .monitorEvent(
-          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-          monitorJsonObject.toJSONString()
-        );
 
       return Response.ok().entity(reviews).build();
     } catch (Exception e) {
@@ -717,8 +656,6 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response addRating(@PathParam("id") int id, String rating) {
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject response = new JSONObject();
 
@@ -774,18 +711,6 @@ public class MensaService extends RESTService {
             String.valueOf(id)
           );
 
-        monitorJsonObject.appendField("method", "addRating");
-        monitorJsonObject.appendField(
-          "time",
-          System.currentTimeMillis() - responseStart
-        );
-
-        Context
-          .get()
-          .monitorEvent(
-            MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-            monitorJsonObject.toJSONString()
-          );
         return Response.ok().entity(response).build();
       } else {
         s.close();
@@ -822,9 +747,6 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response deleteRating(@PathParam("id") int id) {
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
-
     try {
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
@@ -839,19 +761,6 @@ public class MensaService extends RESTService {
         .monitorEvent(
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5,
           String.valueOf(id)
-        );
-
-      monitorJsonObject.appendField("method", "deleteRating");
-      monitorJsonObject.appendField(
-        "time",
-        System.currentTimeMillis() - responseStart
-      );
-
-      Context
-        .get()
-        .monitorEvent(
-          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-          monitorJsonObject.toJSONString()
         );
 
       return Response.ok().build();
@@ -877,8 +786,6 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response getPictures(@PathParam("id") int id) {
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
     // Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_6, dish);
     //TODO: adjust monitoring message
     JSONArray pics = new JSONArray();
@@ -893,18 +800,7 @@ public class MensaService extends RESTService {
         .get()
         .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_1, e.getMessage());
     }
-    monitorJsonObject.appendField("method", "getPictures");
-    monitorJsonObject.appendField(
-      "time",
-      System.currentTimeMillis() - responseStart
-    );
 
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-        monitorJsonObject.toJSONString()
-      );
     return Response.ok().entity(new JSONArray()).build();
   }
 
@@ -921,21 +817,8 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   @RolesAllowed("authenticated")
   public Response addPicture(@PathParam("id") int id, Picture picture) {
-    JSONObject monitorJsonObject = new JSONObject();
-    final long responseStart = System.currentTimeMillis();
     //Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_7, id);
-    monitorJsonObject.appendField("method", "addPicture");
-    monitorJsonObject.appendField(
-      "time",
-      System.currentTimeMillis() - responseStart
-    );
 
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-        monitorJsonObject.toJSONString()
-      );
     return Response.ok().build();
   }
 
