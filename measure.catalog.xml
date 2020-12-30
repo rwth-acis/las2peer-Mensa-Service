@@ -4,7 +4,7 @@
         <query name="processTimeAvrg">
 			SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration")) FROM
 			LAS2PEERMON.MESSAGE
-			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'
+			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'  AND SOURCE_AGENT = '$SERVICE$'
         </query>
         <visualization type="Value" />
     </measure>
@@ -12,7 +12,7 @@
         <query name="processTimeAvgByUri">
 			SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration")) FROM
 			LAS2PEERMON.MESSAGE
-			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'
+			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND SOURCE_AGENT = '$SERVICE$'
             GROUP BY JSON_EXTRACT(REMARKS,"$.url")
         </query>
         <visualization type="Chart">
@@ -26,26 +26,39 @@
         <query name="exceptionCount">
 			SELECT COUNT(*) FROM
 			LAS2PEERMON.MESSAGE
-			WHERE EVENT = 'SERVICE_CUSTOM_ERROR_1'
+			WHERE EVENT = 'SERVICE_CUSTOM_ERROR_1' AND SOURCE_AGENT = '$SERVICE$'
         </query>
         <visualization type="Value" />
     </measure>
 
     <measure name="Number of unsuccessfull menu retrievals">
-        <query name="menuRetrieveExceptions">
+        <query name="menuRetrieveFailures">
 			SELECT COUNT(*) FROM
 			LAS2PEERMON.MESSAGE
-			WHERE EVENT = 'SERVICE_CUSTOM_ERROR_2'
+			WHERE EVENT = 'SERVICE_CUSTOM_ERROR_2' AND SOURCE_AGENT = '$SERVICE$'
         </query>
         <visualization type="Value" />
     </measure>
 
     <measure name="Successful Service Requests Ratio">
         <query name="MessageReceived">
-        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'
         </query>
         <query name="SuccessResponses">
-        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING' 
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING'  AND SOURCE_AGENT = '$SERVICE$'
+        </query>
+        <visualization type="KPI">
+            <operand name="SuccessResponses" index="0"/>
+            <operator name="/" index="1"/>
+            <operand name="MessageReceived" index="2"/>
+        </visualization>
+    </measure>
+    <measure name="Ratio of Requests made by using the Bot">
+        <query name="MessageReceived">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'
+        </query>
+        <query name="SuccessResponses">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING'  AND SOURCE_AGENT = '$SERVICE$'
         </query>
         <visualization type="KPI">
             <operand name="SuccessResponses" index="0"/>

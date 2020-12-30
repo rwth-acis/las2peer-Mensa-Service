@@ -44,6 +44,7 @@ public class ServiceTest {
   final String SOME_MENSA = "academica";
   final String SOME_COMMENT = "My Comment";
   final String SOME_IMAGE_DATA = "data:image/png;base64,SOMEFAKEBASE64";
+  final String SOME_DATE = "2020-11-30";
 
   /**
    * Called before a test starts.
@@ -118,7 +119,7 @@ public class ServiceTest {
 
       for (String mensa : mensas) {
         System.out.println("Trying to fetch menu for mensa " + mensa);
-        result = getMensa(client, mensa, "language");
+        result = getMensa(client, mensa, "language", SOME_DATE);
 
         Assert.assertEquals(200, result.getHttpCode());
         // System.out.println(
@@ -126,8 +127,8 @@ public class ServiceTest {
         // );
       }
       //Mensa not supported:
-      result = getMensa(client, "mensaGibtEsNicht", "language");
-      Assert.assertEquals(409, result.getHttpCode());
+      result = getMensa(client, "mensaGibtEsNicht", "language", SOME_DATE);
+      Assert.assertEquals(404, result.getHttpCode());
       // System.out.println(
       //   "Result of 'mensaGibtEsNicht': " + result.getResponse().trim()
       // );
@@ -195,7 +196,7 @@ public class ServiceTest {
     System.out.println("Adding rating");
     MiniClient client = getClient();
     // when
-    ClientResponse res = getMensa(client, SOME_MENSA, "language"); // fetch menus to ensure that there are dishes in the db
+    ClientResponse res = getMensa(client, SOME_MENSA, "language", SOME_DATE); // fetch menus to ensure that there are dishes in the db
     // then
     Assert.assertEquals(200, res.getHttpCode());
     res = getDishes(client);
@@ -354,13 +355,14 @@ public class ServiceTest {
   private ClientResponse getMensa(
     MiniClient client,
     String mensa,
-    String language
+    String language,
+    String date
   ) {
     HashMap<String, String> header = new HashMap<String, String>();
     header.put("accept-language", language);
     return client.sendRequest(
       "GET",
-      mainPath + getMensaId(mensa),
+      mainPath + getMensaId(mensa) + "?date=" + SOME_DATE,
       "",
       "text/plain",
       MediaType.TEXT_HTML + ";charset=utf-8",
@@ -382,7 +384,7 @@ public class ServiceTest {
   private ClientResponse removeRating(MiniClient client, int dishId) {
     return client.sendRequest(
       "GET",
-      mainPath + "dishes" + dishId,
+      mainPath + "dishes/" + dishId,
       "",
       MediaType.TEXT_PLAIN,
       MediaType.TEXT_PLAIN,

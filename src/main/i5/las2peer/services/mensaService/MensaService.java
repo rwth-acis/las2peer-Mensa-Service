@@ -3,8 +3,10 @@ package i5.las2peer.services.mensaService;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
+import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
+import i5.las2peer.security.BotAgent;
 import i5.las2peer.services.mensaService.database.SQLDatabase;
 import i5.las2peer.services.mensaService.database.SQLDatabaseType;
 import io.swagger.annotations.Api;
@@ -252,6 +254,8 @@ public class MensaService extends RESTService {
   public Response getMenu(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
+    UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+    System.out.println(userAgent);
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -260,6 +264,7 @@ public class MensaService extends RESTService {
 
       String mensa = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
+
       if (mensa == null) {
         mensa = context.getAsString("default_mensa"); // see if user has chosen a default_mensa
         if (mensa == null) throw new ChatException(
@@ -283,7 +288,8 @@ public class MensaService extends RESTService {
 
       String menu = createMenuChatResponse(
         mensaObj.getAsString("name"),
-        mensaObj.getAsNumber("id").intValue()
+        mensaObj.getAsNumber("id").intValue(),
+        null
       );
 
       chatResponse.appendField("text", menu);
@@ -306,7 +312,7 @@ public class MensaService extends RESTService {
    *
    * @param id    Id of a canteen supported by the OpenMensa API.
    * @param format Format in which the menu should be returned (json or html)
-   *
+   * @param date Date for which the menu should be queried
    * @return Returns a String containing the menu.
    */
   @GET
@@ -326,7 +332,8 @@ public class MensaService extends RESTService {
   )
   public Response getMensa(
     @PathParam("id") int id,
-    @QueryParam("format") @DefaultValue("html") String format
+    @QueryParam("format") @DefaultValue("html") String format,
+    @QueryParam("date") @DefaultValue("") String date
   ) {
     JSONArray mensaMenu;
     String returnString;
@@ -339,7 +346,7 @@ public class MensaService extends RESTService {
       );
 
     try {
-      mensaMenu = getMensaMenu(id);
+      mensaMenu = getMensaMenu(id, date);
 
       if ("html".equals(format)) {
         returnString = convertToHtml(mensaMenu);
@@ -348,7 +355,7 @@ public class MensaService extends RESTService {
       }
     } catch (IOException e) {
       return Response
-        .status(Status.CONFLICT)
+        .status(Status.NOT_FOUND)
         .entity("Could not get the menu for mensa with id:" + id)
         .build();
     } catch (Exception e) {
@@ -497,6 +504,7 @@ public class MensaService extends RESTService {
       context = getContext(channelId, p);
       String mensa = json.getAsString("mensa");
       String category = json.getAsString("category");
+      String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
       Number stars = json.getAsNumber("stars");
 
       if (stars != null) { //This is the seconde step, where the user is specifiying how many stars he gives the dish
@@ -535,7 +543,8 @@ public class MensaService extends RESTService {
       context.put("selected_mensa", mensaObj); //save the mensa obj in context for later lookup on submitReview
       JSONObject dish = extractDishFromMenu(
         mensaObj.getAsNumber("id").intValue(),
-        category
+        category,
+        date
       );
       context.put("selected_dish", dish); //save the dish obj in context for later lookup on submitReview
       chatResponse.appendField(
@@ -842,7 +851,7 @@ public class MensaService extends RESTService {
     String text = form.getFirst("text");
     String response = "";
     if (cmd.equals("/mensa")) {
-      response = (String) getMensa(getMensaId(text), "html").getEntity();
+      response = (String) getMensa(getMensaId(text), "html", null).getEntity();
       Context
         .get()
         .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
@@ -854,7 +863,7 @@ public class MensaService extends RESTService {
    * @param name The name of the mensa
    * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
    */
-  private String createMenuChatResponse(String name, int id)
+  private String createMenuChatResponse(String name, int id, String date)
     throws SQLException, ChatException {
     String MESSAGE_HEAD = "";
     String weekday = new SimpleDateFormat("EEEE").format(new Date());
@@ -868,7 +877,7 @@ public class MensaService extends RESTService {
       "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
 
     try {
-      JSONArray mensaMenu = getMensaMenu(id);
+      JSONArray mensaMenu = getMensaMenu(id, date);
       String returnString = convertToHtml(mensaMenu);
       return MESSAGE_HEAD + returnString;
     } catch (IOException e) {
@@ -927,40 +936,42 @@ public class MensaService extends RESTService {
   /**
    * Gets the menu for a given mensa
    * @param mensaID id of the mensa in the OpenMensa API
+   * @param date Date for which the menu should be queried, needs to be in "yyyy-MM-dd" Date format
    * @return the menu of the mensa for that day, or Monday if the given day is on a weekend
    * @throws IOException if the menu could not be fetched from the openmensa api
    */
-  public JSONArray getMensaMenu(int mensaID) throws IOException {
+  public JSONArray getMensaMenu(int mensaID, String date) throws IOException {
     JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
     String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/";
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     Calendar cal = Calendar.getInstance();
     int weekday = cal.get(Calendar.DAY_OF_WEEK);
-    String day;
     JSONArray menu = new JSONArray();
     boolean closed = true; // if all dishes in the returned menu have the name closed then the mensa is closed
 
-    if (weekday == 1) { // Sunday
-      Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
-      day = dateFormat.format(monday);
-    } else if (weekday == 7) { // Saturday
-      Date sunday = new Date(new Date().getTime() + 2 * ONE_DAY_IN_MS);
-      day = dateFormat.format(sunday);
-    } else {
-      day = dateFormat.format(new Date());
+    if (date == null || "".equals(date)) { //if date is not provided get current date or mondy if current day is weekend
+      if (weekday == 1) { // Sunday
+        Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
+        date = dateFormat.format(monday);
+      } else if (weekday == 7) { // Saturday
+        Date sunday = new Date(new Date().getTime() + 2 * ONE_DAY_IN_MS);
+        date = dateFormat.format(sunday);
+      } else {
+        date = dateFormat.format(new Date());
+      }
     }
 
-    urlString += mensaID + "/days/" + day + "/meals";
-
+    urlString += mensaID + "/days/" + date + "/meals";
+    System.out.println(urlString);
     try {
       URL url = new URL(urlString);
       URLConnection con = url.openConnection();
       con.addRequestProperty("Content-type", "application/json");
       menu = (JSONArray) jsonParser.parse(con.getInputStream());
-
+      System.out.println(menu.toJSONString());
       for (Object object : menu) {
         String dishname = ((JSONObject) object).getAsString("name");
-        if (!"geschlossen".equals(dishname) && !"closed".equals(dishname)) {
+        if (!dishname.contains("geschlossen") && !dishname.contains("closed")) {
           closed = false;
           break;
         }
@@ -1246,9 +1257,13 @@ public class MensaService extends RESTService {
     return new JSONObject();
   }
 
-  private JSONObject extractDishFromMenu(int mensaId, String catgeory)
+  private JSONObject extractDishFromMenu(
+    int mensaId,
+    String catgeory,
+    String date
+  )
     throws IOException, ChatException {
-    JSONArray menu = getMensaMenu(mensaId);
+    JSONArray menu = getMensaMenu(mensaId, date);
     for (Object item : menu) {
       JSONObject obj = (JSONObject) item;
 

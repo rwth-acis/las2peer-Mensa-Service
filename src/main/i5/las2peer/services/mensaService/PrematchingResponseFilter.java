@@ -7,6 +7,7 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.PreMatching;
 import javax.ws.rs.ext.Provider;
+import net.minidev.json.JSONObject;
 
 @Provider
 @PreMatching
@@ -24,15 +25,14 @@ public class PrematchingResponseFilter implements ContainerResponseFilter {
       System.currentTimeMillis() -
       (long) requestContext.getProperty("timestamp");
 
+    JSONObject monitEvent = new JSONObject();
+    monitEvent.appendField("url", requestContext.getUriInfo().getPath());
+    monitEvent.appendField("duration", processDuration);
     Context
       .get()
       .monitorEvent(
         MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
-        String.format(
-          "{\"url\":%s,\"duration\":%s}",
-          requestContext.getUriInfo().getRequestUri(),
-          processDuration
-        )
+        monitEvent.toJSONString()
       );
 
     int status = responseContext.getStatus();
