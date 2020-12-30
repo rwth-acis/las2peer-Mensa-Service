@@ -1,0 +1,42 @@
+<SuccessModel name="Mensa Service Evaluation" service="i5.las2peer.services.shortMessageService.ShortMessageService@1.0">
+
+    <dimension name="System Quality">
+        <factor name="Avergae time to process a request">
+        </factor>
+        <factor name="Avergae process time per uri">
+        </factor>
+        <factor name="Number of unhandled exceptions">
+        </factor>
+        <factor name="Successful Service Requests Ratio">
+        </factor>
+    </dimension>
+
+    <dimension name="Information Quality">
+        <factor name="Number of unsuccessfull menu retrievals">
+        </factor>
+    </dimension>
+
+    <dimension name="Use">
+        <factor name="Login VS Id as recipient">
+            <measure name="send to login" />
+            <measure name="send to id" />
+        </factor>
+    </dimension>
+
+    <dimension name="User Satisfaction">
+        <factor name="No Factors or Measures yet">
+        </factor>
+    </dimension>
+
+    <dimension name="Individual Impact">
+        <factor name="Messages per Agent">
+            <measure name="Messages per Agent" />
+        </factor>
+    </dimension>
+
+    <dimension name="Community Impact">
+        <factor name="No Factors or Measures yet">
+        </factor>
+    </dimension>
+
+</SuccessModel>

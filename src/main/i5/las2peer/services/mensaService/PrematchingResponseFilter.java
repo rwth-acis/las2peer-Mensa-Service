@@ -29,12 +29,17 @@ public class PrematchingResponseFilter implements ContainerResponseFilter {
       .monitorEvent(
         MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
         String.format(
-          "{\"url\":%s,\"url\":%s}",
+          "{\"url\":%s,\"duration\":%s}",
           requestContext.getUriInfo().getRequestUri(),
           processDuration
         )
       );
 
-    MensaService service = (MensaService) Context.getCurrent().getService();
+    int status = responseContext.getStatus();
+    if (status == 200) {
+      Context.get().monitorEvent(MonitoringEvent.RESPONSE_SENDING, "");
+    } else {
+      Context.get().monitorEvent(MonitoringEvent.RESPONSE_FAILED, "");
+    }
   }
 }

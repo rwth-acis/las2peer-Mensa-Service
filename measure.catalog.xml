@@ -1,0 +1,56 @@
+<Catalog>
+
+    <measure name="Avergae time to process a request">
+        <query name="processTimeAvrg">
+			SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration")) FROM
+			LAS2PEERMON.MESSAGE
+			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'
+        </query>
+        <visualization type="Value" />
+    </measure>
+    <measure name="Avergae process time per uri">
+        <query name="processTimeAvgByUri">
+			SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration")) FROM
+			LAS2PEERMON.MESSAGE
+			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'
+            GROUP BY JSON_EXTRACT(REMARKS,"$.url")
+        </query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>processTimeAvgByUri</nodeId>
+            <title>Average duration to process a request</title>
+        </visualization>
+    </measure>
+
+    <measure name="Number of unhandled exceptions">
+        <query name="exceptionCount">
+			SELECT COUNT(*) FROM
+			LAS2PEERMON.MESSAGE
+			WHERE EVENT = 'SERVICE_CUSTOM_ERROR_1'
+        </query>
+        <visualization type="Value" />
+    </measure>
+
+    <measure name="Number of unsuccessfull menu retrievals">
+        <query name="menuRetrieveExceptions">
+			SELECT COUNT(*) FROM
+			LAS2PEERMON.MESSAGE
+			WHERE EVENT = 'SERVICE_CUSTOM_ERROR_2'
+        </query>
+        <visualization type="Value" />
+    </measure>
+
+    <measure name="Successful Service Requests Ratio">
+        <query name="MessageReceived">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'
+        </query>
+        <query name="SuccessResponses">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING' 
+        </query>
+        <visualization type="KPI">
+            <operand name="SuccessResponses" index="0"/>
+            <operator name="/" index="1"/>
+            <operand name="MessageReceived" index="2"/>
+        </visualization>
+    </measure>
+</Catalog>
