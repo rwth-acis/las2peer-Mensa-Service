@@ -347,13 +347,9 @@ public class MensaService extends RESTService {
         returnString = mensaMenu.toString();
       }
     } catch (IOException e) {
-      Context
-        .get()
-        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_1, e.getMessage());
-
       return Response
         .status(Status.CONFLICT)
-        .entity("Could not get the menu for mensa " + id)
+        .entity("Could not get the menu for mensa with id:" + id)
         .build();
     } catch (Exception e) {
       Context
@@ -942,6 +938,7 @@ public class MensaService extends RESTService {
     int weekday = cal.get(Calendar.DAY_OF_WEEK);
     String day;
     JSONArray menu = new JSONArray();
+    boolean closed = true; // if all dishes in the returned menu have the name closed then the mensa is closed
 
     if (weekday == 1) { // Sunday
       Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
@@ -960,28 +957,37 @@ public class MensaService extends RESTService {
       URLConnection con = url.openConnection();
       con.addRequestProperty("Content-type", "application/json");
       menu = (JSONArray) jsonParser.parse(con.getInputStream());
+
+      for (Object object : menu) {
+        String dishname = ((JSONObject) object).getAsString("name");
+        if (!"geschlossen".equals(dishname) && !"closed".equals(dishname)) {
+          closed = false;
+          break;
+        }
+      }
+      if (closed) {
+        throw new IOException("Mensa closed");
+      }
       Context
         .get()
         .monitorEvent(
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10,
           menu.toString()
         );
+      saveDishesToIndex(menu, mensaID);
+      return menu;
     } catch (ParseException e) {
       e.printStackTrace();
+      return null;
     } catch (IOException e) {
-      System.out.println(
-        "Error on URL Connection to OpenMensa API, url: " + urlString
-      );
       Context
         .get()
         .monitorEvent(
           MonitoringEvent.SERVICE_CUSTOM_ERROR_2,
           String.valueOf(mensaID)
         );
-      throw e;
+      throw new IOException("Mensa closed");
     }
-    saveDishesToIndex(menu, mensaID);
-    return menu;
   }
 
   /**Formats a given menu into a text string
@@ -1026,6 +1032,7 @@ public class MensaService extends RESTService {
       }
     }
     returnString += "___\n";
+
     return returnString;
   }
 
