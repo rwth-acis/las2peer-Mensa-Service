@@ -66,4 +66,20 @@
             <operand name="MessageReceived" index="2"/>
         </visualization>
     </measure>
+
+    <measure name="Process durations over time">
+        <query name="ProcDurations">
+        SELECT TIME_STAMP AS Time,
+        AVG(JSON_EXTRACT(REMARKS,"$.duration")) FROM
+			LAS2PEERMON.MESSAGE
+			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'  AND SOURCE_AGENT = '$SERVICE$'
+            GROUP BY Time
+        </query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>ProcDurations</nodeId>
+            <title>Average process durations</title>
+
+        </visualization>
+    </measure>
 </Catalog>

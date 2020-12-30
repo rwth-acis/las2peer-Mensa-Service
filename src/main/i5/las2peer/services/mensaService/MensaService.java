@@ -255,7 +255,8 @@ public class MensaService extends RESTService {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
     UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-    System.out.println(userAgent);
+    System.out.println(userAgent.getLoginName());
+    System.out.println(userAgent.getEmail());
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -962,13 +963,13 @@ public class MensaService extends RESTService {
     }
 
     urlString += mensaID + "/days/" + date + "/meals";
-    System.out.println(urlString);
+
     try {
       URL url = new URL(urlString);
       URLConnection con = url.openConnection();
       con.addRequestProperty("Content-type", "application/json");
       menu = (JSONArray) jsonParser.parse(con.getInputStream());
-      System.out.println(menu.toJSONString());
+
       for (Object object : menu) {
         String dishname = ((JSONObject) object).getAsString("name");
         if (!dishname.contains("geschlossen") && !dishname.contains("closed")) {
@@ -1085,7 +1086,6 @@ public class MensaService extends RESTService {
         }
       );
     } catch (Exception e) {
-      System.out.println("Error couldnt save dishes");
       e.printStackTrace();
       Context
         .get()
@@ -1250,7 +1250,7 @@ public class MensaService extends RESTService {
   private JSONObject getContext(String channelId, JSONParser p)
     throws ParseException {
     String obj = ContextInfo.get(channelId);
-    System.out.println("contex for channel " + channelId + ": " + obj);
+    //  System.out.println("contex for channel " + channelId + ": " + obj);
     if (obj != null) {
       return (JSONObject) p.parse(obj);
     }

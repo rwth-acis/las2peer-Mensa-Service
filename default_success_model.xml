@@ -35,7 +35,7 @@
     </dimension>
 
     <dimension name="Community Impact">
-        <factor name="No Factors or Measures yet">
+        <factor name="Ratio of bot requests over all requests">
         </factor>
     </dimension>
 
