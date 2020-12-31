@@ -6,7 +6,6 @@ import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
-import i5.las2peer.security.BotAgent;
 import i5.las2peer.services.mensaService.database.SQLDatabase;
 import i5.las2peer.services.mensaService.database.SQLDatabaseType;
 import io.swagger.annotations.Api;
@@ -197,6 +196,7 @@ public class MensaService extends RESTService {
       "SERVICE_CUSTOM_MESSAGE_10",
       "Menu successfully retrieved. Format: id of mensa ."
     );
+
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_20",
       "Menu queried for unsupported mensa. Format: Name of unsupported mensa."
@@ -512,7 +512,7 @@ public class MensaService extends RESTService {
         int s = stars.intValue();
 
         if (s < 0 || s > 5) {
-          throw new ChatException("Stars must be between 0 and 5");
+          throw new ChatException("Stars must be between 1 and 5");
         }
         context.put("stars", s);
         ContextInfo.put(channelId, context.toJSONString());

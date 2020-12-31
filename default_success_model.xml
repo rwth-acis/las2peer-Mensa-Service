@@ -1,25 +1,26 @@
 <SuccessModel name="Mensa Service Evaluation" service="i5.las2peer.services.shortMessageService.ShortMessageService@1.0">
 
     <dimension name="System Quality">
-        <factor name="Avergae time to process a request">
+        <factor name="Task Responsiveness">
+            <measure name="Avergae time to process a request"/>
+            <measure name="Avergae process time per uri"/>
         </factor>
-        <factor name="Avergae process time per uri">
-        </factor>
-        <factor name="Number of unhandled exceptions">
-        </factor>
-        <factor name="Successful Service Requests Ratio">
+
+        <factor name="Error Rate">
+            <measure name="Successful Service Requests Ratio"/>
+            <measure name="Number of unhandled exceptions"/>
         </factor>
     </dimension>
 
     <dimension name="Information Quality">
-        <factor name="Number of unsuccessfull menu retrievals">
+        <factor name="Reliability">
+            <measure name="Number of unsuccessfull menu retrievals"/>
         </factor>
     </dimension>
 
     <dimension name="Use">
-        <factor name="Login VS Id as recipient">
-            <measure name="send to login" />
-            <measure name="send to id" />
+        <factor name="Frequency of use">
+            <measure name="Average time spent on chat interactions per week (per user)" />
         </factor>
     </dimension>
 
@@ -29,13 +30,15 @@
     </dimension>
 
     <dimension name="Individual Impact">
-        <factor name="Messages per Agent">
-            <measure name="Messages per Agent" />
+        <factor name="Time to submit a task">
+            <measure name="Average time to submit a review" />
         </factor>
     </dimension>
 
     <dimension name="Community Impact">
-        <factor name="Ratio of bot requests over all requests">
+        <factor name="Interface use">
+            <measure name="Ratio of chat requests" />
+            <measure name="Ratio of community application requests" />
         </factor>
     </dimension>
 
