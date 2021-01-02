@@ -26,7 +26,7 @@
 
     <dimension name="Use">
         <factor name="Frequency of use">
-            <measure name="Average time spent on chat interactions per week (per user)" />
+            <measure name="Time spent on chat interactions per week (per user)" />
         </factor>
     </dimension>
 

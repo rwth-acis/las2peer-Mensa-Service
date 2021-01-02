@@ -22,6 +22,20 @@
         </visualization>
     </measure>
 
+    <measure name="Successful Service Requests Ratio">
+        <query name="MessageReceived">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'
+        </query>
+        <query name="SuccessResponses">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING'  AND SOURCE_AGENT = '$SERVICE$'
+        </query>
+        <visualization type="KPI">
+            <operand name="SuccessResponses" index="0"/>
+            <operator name="/" index="1"/>
+            <operand name="MessageReceived" index="2"/>
+        </visualization>
+    </measure>
+
     <measure name="Number of unhandled exceptions">
         <query name="exceptionCount">
 			SELECT COUNT(*) FROM
@@ -40,19 +54,17 @@
         <visualization type="Value" />
     </measure>
 
-    <measure name="Successful Service Requests Ratio">
-        <query name="MessageReceived">
-        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'
+    <measure name="Time spent on chat interactions per week (per user)">
+        <query name="avgTimeSpent">
+			SELECT sum(time),email FROM(
+                SELECT REMARKS->"$.time" as time,REMARKS->"$.email" as email FROM LAS2PEERMON.MESSAGE 
+                WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_41' AND SOURCE_AGENT = '$SERVICE$' 
+                GROUP BY REMARKS->"$.email", WEEK(time_stamp)
+            ) as T
         </query>
-        <query name="SuccessResponses">
-        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING'  AND SOURCE_AGENT = '$SERVICE$'
-        </query>
-        <visualization type="KPI">
-            <operand name="SuccessResponses" index="0"/>
-            <operator name="/" index="1"/>
-            <operand name="MessageReceived" index="2"/>
-        </visualization>
+        <visualization type="Value" />
     </measure>
+
     <measure name="Ratio of Requests made by using the Bot">
         <query name="MessageReceived">
         SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'
