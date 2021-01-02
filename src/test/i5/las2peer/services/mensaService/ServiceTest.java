@@ -24,7 +24,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
-import org.yaml.snakeyaml.parser.ParserException;
 
 /**
  * Example Test Class demonstrating a basic JUnit test structure.
@@ -44,12 +43,12 @@ public class ServiceTest {
   final String SOME_MENSA = "academica";
   final String SOME_COMMENT = "My Comment";
   final String SOME_IMAGE_DATA = "data:image/png;base64,SOMEFAKEBASE64";
-  final String SOME_DATE = "2020-11-30";
+  final String SOME_DATE = "2020-11-30"; //Please note that the mensa needs to be open on that day
 
   /**
    * Called before a test starts.
    * <p>
-   * Sets up the node, initializes connector and adds user agent that can be used
+   * Sets up the node, initializes connector and adds user agent that cSyan be used
    * throughout the test.
    *
    * @throws Exception
@@ -112,9 +111,7 @@ public class ServiceTest {
       MiniClient client = getClient();
       ClientResponse result;
       // Try to get the menus
-      System.out.println(
-        "Please note that this service test will fail if the menu for the mensa is not available due to the canteen being closed"
-      );
+
       String[] mensas = { "vita", "academica" };
 
       for (String mensa : mensas) {
@@ -138,39 +135,52 @@ public class ServiceTest {
     }
   }
 
-  // /**
-  //  * Test to execute a command.
-  //  */
-  // @Test
-  // public void testCommand() {
-  //   try {
-  //     MiniClient client = getClient();
-  //     ClientResponse result;
-  //     // Try to get the menus
+  /**
+   * Test get all dishes.
+   */
+  @Test
+  public void testGetDishes() throws JSONException {
+    // given
+    System.out.println("Adding rating");
+    MiniClient client = getClient();
+    // when
+    ClientResponse res = getMensa(client, SOME_MENSA, "language", SOME_DATE); // fetch menus to ensure that there are dishes in the db
+    // then
+    Assert.assertEquals(200, res.getHttpCode());
+    res = getDishes(client);
+    Assert.assertEquals(200, res.getHttpCode());
+  }
 
-  //     String[] mensas = { "vita", "academica" };
-  //     String[] commands = { "/mensa" };
+  /**
+   * Test to execute a command.
+   */
+  @Test
+  public void testCommand() {
+    try {
+      MiniClient client = getClient();
+      ClientResponse result;
+      // Try to get the menus
 
-  //     for (String command : commands) {
-  //       for (String mensa : mensas) {
-  //         result = postCommand(client, "de-de", command, mensa);
-  //         System.out.println("Post mensa for " + mensa);
-  //         System.out.println(result.getResponse());
-  //         Assert.assertEquals(200, result.getHttpCode());
-  //         System.out.println(
-  //           "Result of '" + mensa + "': " + result.getResponse().trim()
-  //         );
-  //       }
-  //       // result = postCommand(client, "de-de", command, "mensaGibtEsNicht");
-  //       // Assert.assertEquals(200, result.getHttpCode());
-  //       // System.out.println("Result of 'mensaGibtEsNicht': " +
-  //       // result.getResponse().trim());
-  //     }
-  //   } catch (Exception e) {
-  //     e.printStackTrace();
-  //     Assert.fail(e.toString());
-  //   }
-  // }
+      String[] mensas = { "vita", "academica" };
+      String[] commands = { "/mensa" };
+
+      for (String command : commands) {
+        for (String mensa : mensas) {
+          result = postCommand(client, "de-de", command, mensa);
+          System.out.println("Post mensa for " + mensa);
+          System.out.println(result.getResponse());
+          Assert.assertEquals(200, result.getHttpCode());
+        }
+        // result = postCommand(client, "de-de", command, "mensaGibtEsNicht");
+        // Assert.assertEquals(200, result.getHttpCode());
+        // System.out.println("Result of 'mensaGibtEsNicht': " +
+        // result.getResponse().trim());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.toString());
+    }
+  }
 
   // /**
   //  * Test to add a picture for a dish.
@@ -187,22 +197,6 @@ public class ServiceTest {
   //   System.out.println(response.getResponse());
   //   Assert.assertEquals(200, response.getHttpCode());
   // }
-  /**
-   * Test get all dishes.
-   */
-  @Test
-  public void testGetDishes() throws JSONException {
-    // given
-    System.out.println("Adding rating");
-    MiniClient client = getClient();
-    // when
-    ClientResponse res = getMensa(client, SOME_MENSA, "language", SOME_DATE); // fetch menus to ensure that there are dishes in the db
-    // then
-    Assert.assertEquals(200, res.getHttpCode());
-    res = getDishes(client);
-    Assert.assertEquals(200, res.getHttpCode());
-    System.out.println(res.getResponse());
-  }
 
   // /**
   //  * Test to add a picture for a dish.
@@ -260,48 +254,48 @@ public class ServiceTest {
   //   JSONAssert.assertEquals(expectedJSON, response.getResponse(), false);
   // }
 
-  /**
-   * Test to add and remove a rating for a dish.
-   */
-  @Test
-  public void testAddAndRemoveRating() throws JSONException {
-    // given
-    System.out.println("Adding rating");
-    MiniClient client = getClient();
-    // when
-    ClientResponse response = postRating(
-      client,
-      SOME_DISH_ID,
-      STARS,
-      SOME_MENSA,
-      SOME_COMMENT,
-      testAgent.getLoginName()
-    );
+  // /**
+  //  * Test to add and remove a rating for a dish.
+  //  */
+  // @Test
+  // public void testAddAndRemoveRating() throws JSONException {
+  //   // given
+  //   System.out.println("Adding rating");
+  //   MiniClient client = getClient();
+  //   // when
+  //   ClientResponse response = postRating(
+  //     client,
+  //     SOME_DISH_ID,
+  //     STARS,
+  //     SOME_MENSA,
+  //     SOME_COMMENT,
+  //     testAgent.getLoginName()
+  //   );
 
-    // then
-    String expectedJSON = String.format(
-      "{\"author\": \"%s\",\"comment\": \"%s\",\"mensaId\": %s,\"stars\": %s}",
-      testAgent.getLoginName(),
-      this.SOME_COMMENT,
-      String.valueOf(this.getMensaId(SOME_MENSA)),
-      this.STARS
-    );
-    Assert.assertEquals(200, response.getHttpCode());
-    JSONAssert.assertEquals(expectedJSON, response.getResponse(), false);
+  //   // then
+  //   String expectedJSON = String.format(
+  //     "{\"author\": \"%s\",\"comment\": \"%s\",\"mensaId\": %s,\"stars\": %s}",
+  //     testAgent.getLoginName(),
+  //     this.SOME_COMMENT,
+  //     String.valueOf(this.getMensaId(SOME_MENSA)),
+  //     this.STARS
+  //   );
+  //   Assert.assertEquals(200, response.getHttpCode());
+  //   JSONAssert.assertEquals(expectedJSON, response.getResponse(), false);
 
-    try {
-      System.out.println(response.getResponse());
-      JSONTokener obj = new JSONTokener(response.getResponse());
+  //   try {
+  //     System.out.println(response.getResponse());
+  //     JSONTokener obj = new JSONTokener(response.getResponse());
 
-      JSONObject json = new JSONObject(obj);
-      System.out.println(json);
-      int id = json.getInt("id");
-      removeRating(client, id);
-      Assert.assertEquals(200, response.getHttpCode());
-    } catch (Exception e) {
-      Assert.fail("parse failed " + e.getMessage());
-    }
-  }
+  //     JSONObject json = new JSONObject(obj);
+  //     System.out.println(json);
+  //     int id = json.getInt("id");
+  //     removeRating(client, id);
+  //     Assert.assertEquals(200, response.getHttpCode());
+  //   } catch (Exception e) {
+  //     Assert.fail("parse failed " + e.getMessage());
+  //   }
+  // }
 
   // /**
   //  * Test to add a rating for a dish.

@@ -370,6 +370,20 @@ public class MensaService extends RESTService {
       } else {
         returnString = mensaMenu.toString();
       }
+      String responseContentType;
+      switch (format) {
+        case "html":
+          responseContentType = MediaType.TEXT_HTML + ";charset=utf-8";
+          break;
+        default:
+          responseContentType = MediaType.APPLICATION_JSON;
+      }
+
+      return Response
+        .ok()
+        .type(responseContentType)
+        .entity(returnString)
+        .build();
     } catch (IOException e) {
       return Response
         .status(Status.NOT_FOUND)
@@ -385,17 +399,6 @@ public class MensaService extends RESTService {
         .entity(e.getMessage())
         .build();
     }
-
-    String responseContentType;
-    switch (format) {
-      case "html":
-        responseContentType = MediaType.TEXT_HTML + ";charset=utf-8";
-        break;
-      default:
-        responseContentType = MediaType.APPLICATION_JSON;
-    }
-
-    return Response.ok().type(responseContentType).entity(returnString).build();
   }
 
   /**
@@ -495,6 +498,7 @@ public class MensaService extends RESTService {
   }
 
   private float getAverageRating(int dishId) {
+    float result;
     try {
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
@@ -503,11 +507,13 @@ public class MensaService extends RESTService {
       s.setInt(1, dishId);
       ResultSet res = s.executeQuery();
       if (res.next()) {
-        return res.getFloat(1);
+        result = res.getFloat(1);
       } else {
-        return -1;
+        result = -1;
       }
-    } catch (Exception e) {
+      con.close();
+      return result;
+    } catch (SQLException e) {
       e.printStackTrace();
       return -2;
     }
@@ -1066,6 +1072,7 @@ public class MensaService extends RESTService {
       String dish = menuItem.getAsString("name");
       int dishId = menuItem.getAsNumber("id").intValue();
       float avg = getAverageRating(dishId);
+
       if (!"geschlossen".equals(dish) && !"closed".equals(dish)) {
         if (type.equals("Tellergericht") || type.contains("Entrée")) {
           returnString += "🍽 " + type + ": " + dish + "\n";
@@ -1094,7 +1101,7 @@ public class MensaService extends RESTService {
         } else {
           returnString += type + ": " + dish + "\n";
         }
-        if (avg > 0) {
+        if (avg >= 1) {
           returnString +=
             "Average rating: " + String.format("%.2f", avg) + "\n";
         }
@@ -1142,6 +1149,8 @@ public class MensaService extends RESTService {
           }
         }
       );
+      con.close();
+      System.out.println("Done saving dishes");
     } catch (Exception e) {
       e.printStackTrace();
       Context
