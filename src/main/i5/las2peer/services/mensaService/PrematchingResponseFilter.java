@@ -21,6 +21,13 @@ public class PrematchingResponseFilter implements ContainerResponseFilter {
     ContainerRequestContext requestContext,
     ContainerResponseContext responseContext
   ) {
+    int status = responseContext.getStatus();
+    if (status == 200) {
+      Context.get().monitorEvent(MonitoringEvent.RESPONSE_SENDING, "");
+    } else {
+      Context.get().monitorEvent(MonitoringEvent.RESPONSE_FAILED, "");
+    }
+
     long processDuration =
       System.currentTimeMillis() -
       (long) requestContext.getProperty("timestamp");
@@ -34,12 +41,5 @@ public class PrematchingResponseFilter implements ContainerResponseFilter {
         MonitoringEvent.SERVICE_CUSTOM_MESSAGE_40,
         monitEvent.toJSONString()
       );
-
-    int status = responseContext.getStatus();
-    if (status == 200) {
-      Context.get().monitorEvent(MonitoringEvent.RESPONSE_SENDING, "");
-    } else {
-      Context.get().monitorEvent(MonitoringEvent.RESPONSE_FAILED, "");
-    }
   }
 }

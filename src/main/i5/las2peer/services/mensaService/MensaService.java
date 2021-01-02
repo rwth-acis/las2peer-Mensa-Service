@@ -205,6 +205,10 @@ public class MensaService extends RESTService {
       "SERVICE_CUSTOM_MESSAGE_40",
       "Time in ms to process request. Format: jsonString: 'time': Time is ms,'method': request method as string"
     );
+    descriptions.put(
+      "SERVICE_CUSTOM_MESSAGE_41",
+      "Time spent in chat performing a task . Format: jsonString: 'time': Time is ms,'task': kind of task as string, email: email of the user as string "
+    );
 
     // not relevant
     // descriptions.put(
@@ -254,17 +258,25 @@ public class MensaService extends RESTService {
   public Response getMenu(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject chatResponse = new JSONObject();
-    UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-    System.out.println(userAgent.getLoginName());
-    System.out.println(userAgent.getEmail());
+    final long start = System.currentTimeMillis();
+    JSONObject event = new JSONObject();
+
+    // UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+    // System.out.println(userAgent.getLoginName());
+    // System.out.println(userAgent.getEmail());
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
-      String channelId = bodyJson.getAsString("channel");
-      JSONObject context = getContext(channelId, p);
 
+      String channelId = bodyJson.getAsString("channel");
+      String email = bodyJson.getAsString("email");
       String mensa = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
+      JSONObject context = getContext(channelId, p, email);
+      event.put("email", email);
+      event.put("task", "getMenu");
+
+      context = updateContext(bodyJson, context);
 
       if (mensa == null) {
         mensa = context.getAsString("default_mensa"); // see if user has chosen a default_mensa
@@ -296,16 +308,20 @@ public class MensaService extends RESTService {
       chatResponse.appendField("text", menu);
       context.put("selected_mensa", mensaObj);
       ContextInfo.put(channelId, context.toJSONString());
-
-      return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
-      return Response.ok().entity(chatResponse).build();
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
-      return Response.ok().entity(chatResponse).build();
     }
+    event.put("time", String.valueOf(System.currentTimeMillis() - start));
+    Context
+      .get()
+      .monitorEvent(
+        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+        event.toJSONString()
+      );
+    return Response.ok().entity(chatResponse).build();
   }
 
   /**
@@ -369,13 +385,6 @@ public class MensaService extends RESTService {
         .entity(e.getMessage())
         .build();
     }
-
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10,
-        String.valueOf(id)
-      );
 
     String responseContentType;
     switch (format) {
@@ -485,6 +494,25 @@ public class MensaService extends RESTService {
     }
   }
 
+  private float getAverageRating(int dishId) {
+    try {
+      Connection con = getDatabaseConnection();
+      PreparedStatement s = con.prepareStatement(
+        "SELECT AVG(stars) FROM reviews  WHERE dishId=?"
+      );
+      s.setInt(1, dishId);
+      ResultSet res = s.executeQuery();
+      if (res.next()) {
+        return res.getFloat(1);
+      } else {
+        return -1;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      return -2;
+    }
+  }
+
   /**
    * Prepares a review for a chatuser. This function should only be called by a bot service
    * @param body JSONString which contains information about the review. In a first phase it should contain the mensa and category of dish. In a second phase the amount of stars should be provided
@@ -498,6 +526,8 @@ public class MensaService extends RESTService {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject context; //holds the context between the user and the bot
     JSONObject chatResponse = new JSONObject();
+    final long start = System.currentTimeMillis();
+    JSONObject event = new JSONObject();
 
     try {
       JSONObject json = (JSONObject) p.parse(body);
@@ -506,6 +536,7 @@ public class MensaService extends RESTService {
       String mensa = json.getAsString("mensa");
       String category = json.getAsString("category");
       context = getContext(channelId, p);
+      context = updateContext(json, context);
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
 
       if (stars != null) { //This is the second step, where the user is specifiying how many stars he gives the dish
@@ -574,6 +605,13 @@ public class MensaService extends RESTService {
 
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
+    event.put("time", String.valueOf(System.currentTimeMillis() - start));
+    Context
+      .get()
+      .monitorEvent(
+        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+        event.toJSONString()
+      );
     return Response.ok().entity(chatResponse).build();
   }
 
@@ -590,11 +628,14 @@ public class MensaService extends RESTService {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     JSONObject context;
     JSONObject chatResponse = new JSONObject();
+    final long start = System.currentTimeMillis();
+    JSONObject event = new JSONObject();
 
     try {
       JSONObject json = (JSONObject) p.parse(body);
       String channelId = json.getAsString("channel");
       context = getContext(channelId, p);
+      context = updateContext(json, context);
 
       String comment = null;
       boolean containsComment =
@@ -651,6 +692,13 @@ public class MensaService extends RESTService {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
+    event.put("time", String.valueOf(System.currentTimeMillis() - start));
+    Context
+      .get()
+      .monitorEvent(
+        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+        event.toJSONString()
+      );
     return Response.ok().entity(chatResponse).build();
   }
 
@@ -858,9 +906,6 @@ public class MensaService extends RESTService {
     String response = "";
     if (cmd.equals("/mensa")) {
       response = (String) getMensa(getMensaId(text), "html", null).getEntity();
-      Context
-        .get()
-        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10, response);
     }
     return Response.ok().entity(response).build();
   }
@@ -990,7 +1035,7 @@ public class MensaService extends RESTService {
         .get()
         .monitorEvent(
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10,
-          menu.toString()
+          String.valueOf(mensaID)
         );
       saveDishesToIndex(menu, mensaID);
       return menu;
@@ -1019,6 +1064,8 @@ public class MensaService extends RESTService {
       JSONObject menuItem = (JSONObject) o;
       String type = menuItem.getAsString("category");
       String dish = menuItem.getAsString("name");
+      int dishId = menuItem.getAsNumber("id").intValue();
+      float avg = getAverageRating(dishId);
       if (!"geschlossen".equals(dish) && !"closed".equals(dish)) {
         if (type.equals("Tellergericht") || type.contains("Entrée")) {
           returnString += "🍽 " + type + ": " + dish + "\n";
@@ -1046,6 +1093,10 @@ public class MensaService extends RESTService {
           returnString += "🔥 " + type + ": " + dish + "\n";
         } else {
           returnString += type + ": " + dish + "\n";
+        }
+        if (avg > 0) {
+          returnString +=
+            "Average rating: " + String.format("%.2f", avg) + "\n";
         }
       }
     }
@@ -1253,12 +1304,46 @@ public class MensaService extends RESTService {
     throw new ChatException(response);
   }
 
+  /**
+   * Updates the context of a converstation by overwriting the old context
+   * @param json JSONObject containing the new context
+   * @param context old context for which the values will be overwritten
+   * @return new context
+   */
+  private JSONObject updateContext(JSONObject json, JSONObject context) {
+    if (context == null) context = new JSONObject();
+    for (Map.Entry<String, Object> item : json.entrySet()) {
+      context.put(item.getKey(), item.getValue());
+    }
+    return context;
+  }
+
+  private JSONObject getContext(String channelId, JSONParser p, String email)
+    throws ParseException {
+    String obj = ContextInfo.get(channelId);
+    //  System.out.println("contex for channel " + channelId + ": " + obj);
+    if (obj != null) {
+      JSONObject context = (JSONObject) p.parse(obj);
+      if (
+        email != null &&
+        !"".equals(email) &&
+        context.getAsString("email") != null
+      ) {
+        context.appendField("email", email);
+      }
+      return context;
+    }
+    return new JSONObject();
+  }
+
   private JSONObject getContext(String channelId, JSONParser p)
     throws ParseException {
     String obj = ContextInfo.get(channelId);
     //  System.out.println("contex for channel " + channelId + ": " + obj);
     if (obj != null) {
-      return (JSONObject) p.parse(obj);
+      JSONObject context = (JSONObject) p.parse(obj);
+
+      return context;
     }
     return new JSONObject();
   }
