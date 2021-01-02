@@ -496,19 +496,19 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
-    JSONObject context;
+    JSONObject context; //holds the context between the user and the bot
     JSONObject chatResponse = new JSONObject();
 
     try {
       JSONObject json = (JSONObject) p.parse(body);
       String channelId = json.getAsString("channel");
-      context = getContext(channelId, p);
+      Number stars = json.getAsNumber("stars");
       String mensa = json.getAsString("mensa");
       String category = json.getAsString("category");
+      context = getContext(channelId, p);
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
-      Number stars = json.getAsNumber("stars");
 
-      if (stars != null) { //This is the seconde step, where the user is specifiying how many stars he gives the dish
+      if (stars != null) { //This is the second step, where the user is specifiying how many stars he gives the dish
         int s = stars.intValue();
 
         if (s < 0 || s > 5) {
@@ -516,7 +516,10 @@ public class MensaService extends RESTService {
         }
         context.put("stars", s);
         ContextInfo.put(channelId, context.toJSONString());
-        return Response.ok().build();
+        return Response
+          .ok()
+          .entity(chatResponse.appendField("text", ""))
+          .build();
       }
 
       //The first step is to find out which canteeen the user visited and what meal he ate
@@ -529,8 +532,8 @@ public class MensaService extends RESTService {
 
       if (mensa == (null)) {
         JSONObject mensaObj = (JSONObject) context.get("selected_mensa"); //check if a mensa was previously selected (e.g when getting the menu)
-        if (mensaObj.equals(null)) {
-          mensaObj = (JSONObject) context.get("default_mensa"); //check if default mensa has been set
+        if (mensaObj == null) {
+          mensaObj = (JSONObject) context.get("default_mensa"); //check if default mensa has been set //TODO: actually implement this in getMenu
           if (mensaObj == null) {
             throw new ChatException(
               "I could not determine the mensa, you visited 🙁"
@@ -541,12 +544,14 @@ public class MensaService extends RESTService {
       }
       ResultSet mensas = findMensas(mensa);
       JSONObject mensaObj = selectMensa(mensas);
-      context.put("selected_mensa", mensaObj); //save the mensa obj in context for later lookup on submitReview
+
       JSONObject dish = extractDishFromMenu(
         mensaObj.getAsNumber("id").intValue(),
         category,
         date
       );
+
+      context.put("selected_mensa", mensaObj); //save the mensa obj in context for later lookup on submitReview
       context.put("selected_dish", dish); //save the dish obj in context for later lookup on submitReview
       chatResponse.appendField(
         "text",
@@ -593,7 +598,7 @@ public class MensaService extends RESTService {
 
       String comment = null;
       boolean containsComment =
-        !("noComment".equals(json.getAsString("intent")));
+        !("rejection".equals(json.getAsString("intent")));
       if (containsComment) {
         comment = json.getAsString("msg");
       }
@@ -1258,9 +1263,18 @@ public class MensaService extends RESTService {
     return new JSONObject();
   }
 
+  /**
+   * Retrieves an item from a menu
+   * @param mensaId id of mensa for which the menu should be fetched
+   * @param keyword keyword for the menuitem function will match it to
+   * @param date date of the menu
+   * @return Dish as json
+   * @throws IOException
+   * @throws ChatException
+   */
   private JSONObject extractDishFromMenu(
     int mensaId,
-    String catgeory,
+    String keyword,
     String date
   )
     throws IOException, ChatException {
@@ -1269,10 +1283,12 @@ public class MensaService extends RESTService {
       JSONObject obj = (JSONObject) item;
 
       if (
-        obj.getAsString("category").matches("(?i).*" + catgeory + ".*")
+        obj.getAsString("category").matches("(?i).*" + keyword + ".*") ||
+        obj.getAsString("name").matches("(?i).*" + keyword + ".*")
       ) return obj;
     }
-    throw new ChatException("Could not find a dish for " + catgeory);
+
+    throw new ChatException("Could not find a dish for " + keyword + "💁\n ");
   }
 
   // hard coded IDs of mensas in Aachen
