@@ -1,7 +1,7 @@
-<SuccessModel name="Mensa Service Evaluation" service="i5.las2peer.services.shortMessageService.ShortMessageService@1.0">
+<SuccessModel name="Mensa Service Evaluation" service="i5.las2peer.services.mensaService.MensaService@1.0.0">
 
     <dimension name="System Quality">
-        <factor name="Task Responsiveness">
+        <factor name="Service Responsiveness">
             <measure name="Avergae time to process a request"/>
             <measure name="Avergae process time per uri"/>
         </factor>
@@ -15,6 +15,12 @@
     <dimension name="Information Quality">
         <factor name="Reliability">
             <measure name="Number of unsuccessfull menu retrievals"/>
+        </factor>
+        <factor name="Accuracy">
+            <measure name="todo: "/>
+        </factor>
+        <factor name="Relevance">
+            <measure name="todo: "/>
         </factor>
     </dimension>
 
@@ -32,6 +38,9 @@
     <dimension name="Individual Impact">
         <factor name="Time to submit a task">
             <measure name="Average time to submit a review" />
+        </factor>
+        <factor name="Time savings">
+            <measure name="TODO" />
         </factor>
     </dimension>
 
