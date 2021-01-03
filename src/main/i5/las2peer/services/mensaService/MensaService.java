@@ -1124,8 +1124,9 @@ public class MensaService extends RESTService {
         }
         if (avg >= 1) {
           returnString +=
-            "Average rating: " + String.format("%.2f", avg) + "\n";
+            "Average rating: " + String.format("%.2f", avg) + "⭐ \n";
         }
+        returnString += "\n";
       }
     }
     returnString += "___\n";
@@ -1312,11 +1313,11 @@ public class MensaService extends RESTService {
 
     String first = mensas.getString("name"); // first entry
     int id = mensas.getInt("id");
-    String response = "I found the following mensas: \n▪ " + first + "\n";
+    String response = "I found the following mensas: \n- " + first + "\n";
 
     int i = 2;
     while (mensas.next() && i < maxEntries) { //at least 2 entries
-      response += "▪ " + mensas.getString("name") + "\n";
+      response += "- " + mensas.getString("name") + "\n";
       i++;
     }
     if (i == 2) {
