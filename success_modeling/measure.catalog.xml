@@ -10,10 +10,10 @@
     </measure>
     <measure name="Avergae process time per uri">
         <query name="processTimeAvgByUri">
-			SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration")) FROM
+			SELECT AVG(REMARKS->"$.duration"), REMARKS->"$.url" FROM
 			LAS2PEERMON.MESSAGE
 			WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND SOURCE_AGENT = '$SERVICE$'
-            GROUP BY JSON_EXTRACT(REMARKS,"$.url")
+		GROUP BY  REMARKS->"$.url" 
         </query>
         <visualization type="Chart">
             <chartType>BarChart</chartType>
@@ -57,7 +57,7 @@
     <measure name="Time spent on chat interactions per week (per user)">
         <query name="avgTimeSpent">
 			SELECT sum(time),email FROM(
-                SELECT REMARKS->"$.time" as time,REMARKS->"$.email" as email FROM LAS2PEERMON.MESSAGE 
+                SELECT REMARKS->"$.time" as time, REMARKS->"$.email" as email FROM LAS2PEERMON.MESSAGE 
                 WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_41' AND SOURCE_AGENT = '$SERVICE$' 
                 GROUP BY REMARKS->"$.email", WEEK(time_stamp)
             ) as T
