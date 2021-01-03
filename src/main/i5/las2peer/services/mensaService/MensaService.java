@@ -285,11 +285,9 @@ public class MensaService extends RESTService {
         );
       }
       ResultSet mensas;
-      if (city != null) {
-        mensas = findMensas(mensa, city);
-      } else {
-        mensas = findMensas(mensa);
-      }
+
+      mensas = findMensas(mensa, city);
+
       JSONObject mensaObj = selectMensa(mensas);
 
       Context
@@ -314,7 +312,7 @@ public class MensaService extends RESTService {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
-    event.put("time", String.valueOf(System.currentTimeMillis() - start));
+    event.put("time", System.currentTimeMillis() - start);
     Context
       .get()
       .monitorEvent(
@@ -530,78 +528,85 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
-    JSONObject context; //holds the context between the user and the bot
+    String channelId = null;
+    JSONObject context = null; //holds the context between the user and the bot
     JSONObject chatResponse = new JSONObject();
+    JSONObject dish = null;
+    JSONObject mensa = null;
     final long start = System.currentTimeMillis();
-    JSONObject event = new JSONObject();
 
+    System.out.println(body);
     try {
       JSONObject json = (JSONObject) p.parse(body);
-      String channelId = json.getAsString("channel");
-      Number stars = json.getAsNumber("stars");
-      String mensa = json.getAsString("mensa");
-      String category = json.getAsString("category");
+      channelId = json.getAsString("channel");
+
       context = getContext(channelId, p);
       context = updateContext(json, context);
+
+      mensa = (JSONObject) context.get("selected_mensa"); //mensa object
+      dish = (JSONObject) context.get("selected_dish"); //dish object
+      String mensaName = context.getAsString("mensa"); //name of mensa specified by the user
+      String category = context.getAsString("category"); //category specified by the user
+      String city = context.getAsString("city"); //city specified by the user
+      Number stars = context.getAsNumber("stars"); //stars specified by the user
+
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
 
-      if (stars != null) { //This is the second step, where the user is specifiying how many stars he gives the dish
-        int s = stars.intValue();
-
-        if (s < 0 || s > 5) {
-          throw new ChatException("Stars must be between 1 and 5");
+      if ("chooseMensaAndMeal".equals(json.getAsString("intent"))) { //The first step is to find out which canteeen the user visited and what meal he ate
+        context.putIfAbsent("review_start", start);
+        if (mensa == null) {
+          if (mensaName == null) {
+            mensa = (JSONObject) context.get("default_mensa"); //check if default mensa has been set TODO: actually implement this in getMenu
+            if (mensa == null) throw new ChatException(
+              "I could not determine the mensa, you visited 🙁. Could you please repeat that? 😇"
+            );
+            mensaName = mensa.getAsString("name");
+          }
+          ResultSet mensas = findMensas(mensaName, city);
+          mensa = selectMensa(mensas);
+          context.put("selected_mensa", mensa); //save the mensa obj in context for later lookup on submitReview
         }
-        context.put("stars", s);
-        ContextInfo.put(channelId, context.toJSONString());
-        return Response
-          .ok()
-          .entity(chatResponse.appendField("text", ""))
-          .build();
-      }
-
-      //The first step is to find out which canteeen the user visited and what meal he ate
-
-      if (category == (null)) {
-        throw new ChatException(
-          "I could not determine the category of your dish 🙁"
-        );
-      }
-
-      if (mensa == (null)) {
-        JSONObject mensaObj = (JSONObject) context.get("selected_mensa"); //check if a mensa was previously selected (e.g when getting the menu)
-        if (mensaObj == null) {
-          mensaObj = (JSONObject) context.get("default_mensa"); //check if default mensa has been set //TODO: actually implement this in getMenu
-          if (mensaObj == null) {
+        if (dish == null) {
+          if (category == null) {
             throw new ChatException(
-              "I could not determine the mensa, you visited 🙁"
+              "I could not determine the category of your dish 🙁. Could you please repeat that? 😇"
             );
           }
+          dish =
+            extractDishFromMenu(
+              mensa.getAsNumber("id").intValue(),
+              category,
+              date
+            );
+          context.put("selected_dish", dish); //save the dish obj in context for later lookup on submitReview
         }
-        mensa = mensaObj.getAsString("name");
+
+        chatResponse.put(
+          "text",
+          "You ate " +
+          dish.getAsString("name") +
+          " at " +
+          mensa.getAsString("name") +
+          ".\n Is this correct?"
+        );
+      } else if ("averageStars".equals(json.getAsString("intent"))) { //This is the second step, where the user is specifiying how many stars he gives the dish
+        int s = stars.intValue();
+
+        if (s < 1 || s > 5) {
+          throw new ChatException("Stars must be between 1 and 5");
+        }
+        context.put("selected_stars", s);
+
+        chatResponse.put(
+          "text",
+          "Please comment your rating. If you don't want to add a comment just type \"no\""
+        );
+      } else {
+        System.out.println("WRONG context: " + body);
       }
-      ResultSet mensas = findMensas(mensa);
-      JSONObject mensaObj = selectMensa(mensas);
-
-      JSONObject dish = extractDishFromMenu(
-        mensaObj.getAsNumber("id").intValue(),
-        category,
-        date
-      );
-
-      context.put("selected_mensa", mensaObj); //save the mensa obj in context for later lookup on submitReview
-      context.put("selected_dish", dish); //save the dish obj in context for later lookup on submitReview
-      chatResponse.appendField(
-        "text",
-        "You ate " +
-        dish.getAsString("name") +
-        " at " +
-        mensaObj.getAsString("name") +
-        ".\n Is this correct?"
-      );
-
-      ContextInfo.put(channelId, context.toJSONString()); //save context
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
+      chatResponse.put("closeContext", false);
     } catch (Exception e) {
       e.printStackTrace();
 
@@ -611,13 +616,11 @@ public class MensaService extends RESTService {
 
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
-    event.put("time", String.valueOf(System.currentTimeMillis() - start));
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-        event.toJSONString()
-      );
+    if (channelId != null && context != null) ContextInfo.put(
+      channelId,
+      context.toJSONString()
+    ); //save context
+
     return Response.ok().entity(chatResponse).build();
   }
 
@@ -631,19 +634,25 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response submitReview(String body) {
+    System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
-    JSONObject context;
+    String comment = null;
+    JSONObject context = null;
     JSONObject chatResponse = new JSONObject();
-    final long start = System.currentTimeMillis();
     JSONObject event = new JSONObject();
+    String channelId = null;
+    event.put("task", "review");
 
     try {
       JSONObject json = (JSONObject) p.parse(body);
-      String channelId = json.getAsString("channel");
+      channelId = json.getAsString("channel");
+
       context = getContext(channelId, p);
       context = updateContext(json, context);
 
-      String comment = null;
+      String email = context.getAsString("email");
+      event.put("email", email);
+
       boolean containsComment =
         !("rejection".equals(json.getAsString("intent")));
       if (containsComment) {
@@ -653,7 +662,7 @@ public class MensaService extends RESTService {
 
       JSONObject dish = (JSONObject) context.get("selected_dish"); // specified when prepareReview was called
       JSONObject mensa = (JSONObject) context.get("selected_mensa"); // specified when prepareReview was called
-      Number starsFromContext = context.getAsNumber("stars"); // specified when prepareReview was called
+      Number starsFromContext = context.getAsNumber("selected_stars"); // specified when prepareReview was called
 
       if (dish == null) {
         throw new ChatException(
@@ -687,24 +696,35 @@ public class MensaService extends RESTService {
       if (res.getStatus() == 200) {
         chatResponse.appendField(
           "text",
-          "Alright I saved your review. Thanks for providing your feedback 😊"
+          "Alright your review is saved. Thanks for providing your feedback 😊"
         );
+        context.remove("selected_stars");
+        context.remove("selected_mensa");
+        context.remove("selected_dish");
+        Number start = context.getAsNumber("review_start");
+        if (start != null) {
+          event.put("time", System.currentTimeMillis() - start.longValue());
+          Context
+            .get()
+            .monitorEvent(
+              MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+              event.toJSONString()
+            );
+        }
       } else {
         throw new Exception(res.getEntity().toString());
       }
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
+      chatResponse.put("closeContext", false);
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
-    event.put("time", String.valueOf(System.currentTimeMillis() - start));
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-        event.toJSONString()
-      );
+    if (channelId != null && context != null) {
+      ContextInfo.put(channelId, context.toJSONString());
+    }
+
     return Response.ok().entity(chatResponse).build();
   }
 
@@ -971,6 +991,7 @@ public class MensaService extends RESTService {
   }
 
   private ResultSet findMensas(String mensaName, String city) {
+    if (city == null) return findMensas(mensaName);
     Connection dbConnection = null;
     PreparedStatement statement = null;
     ResultSet res;
@@ -1291,11 +1312,11 @@ public class MensaService extends RESTService {
 
     String first = mensas.getString("name"); // first entry
     int id = mensas.getInt("id");
-    String response = "I found the following mensas: \n1. " + first + "\n";
+    String response = "I found the following mensas: \n▪ " + first + "\n";
 
     int i = 2;
     while (mensas.next() && i < maxEntries) { //at least 2 entries
-      response += i + ". " + mensas.getString("name") + "\n";
+      response += "▪ " + mensas.getString("name") + "\n";
       i++;
     }
     if (i == 2) {
@@ -1322,8 +1343,11 @@ public class MensaService extends RESTService {
   private JSONObject updateContext(JSONObject json, JSONObject context) {
     if (context == null) context = new JSONObject();
     for (Map.Entry<String, Object> item : json.entrySet()) {
-      context.put(item.getKey(), item.getValue());
+      if (item.getValue() != null) {
+        context.put(item.getKey(), item.getValue());
+      }
     }
+
     return context;
   }
 
