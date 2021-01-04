@@ -552,7 +552,10 @@ public class MensaService extends RESTService {
 
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
 
-      if ("chooseMensaAndMeal".equals(json.getAsString("intent"))) { //The first step is to find out which canteeen the user visited and what meal he ate
+      if (
+        "chooseMensaAndMeal".equals(json.getAsString("intent")) ||
+        "confirmation".equals(json.getAsString("intent"))
+      ) { //The first step is to find out which canteeen the user visited and what meal he ate
         context.putIfAbsent("review_start", start);
         if (mensa == null) {
           if (mensaName == null) {
@@ -601,8 +604,22 @@ public class MensaService extends RESTService {
           "text",
           "Please comment your rating. If you don't want to add a comment just type \"no\""
         );
-      } else {
-        System.out.println("WRONG context: " + body);
+      } else if ("rejection".equals(json.getAsString("intent"))) { //this is the case where the bot recognized the mensa or category wrong
+        System.out.println("remove select\n-----------------------------\n");
+
+        context.remove("selected_mensa");
+        context.remove("selected_dish");
+        chatResponse.appendField("text", "");
+      } else if ("menu".equals(json.getAsString("intent"))) { //this is the case where the user specifies the mensa
+        System.out.println("mensa select\n-----------------------------\n");
+        ResultSet mensas = findMensas(mensaName, city);
+        mensa = selectMensa(mensas);
+        context.put("selected_mensa", mensa); //save the mensa obj in context for later lookup on submitReview
+        throw new ChatException(
+          "Alright, you went to mensa " +
+          mensa.getAsString("name") +
+          ". Correct?"
+        );
       }
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
@@ -634,7 +651,6 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response submitReview(String body) {
-    System.out.println(body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     String comment = null;
     JSONObject context = null;
@@ -716,7 +732,6 @@ public class MensaService extends RESTService {
       }
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
-      chatResponse.put("closeContext", false);
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
