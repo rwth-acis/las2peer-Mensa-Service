@@ -199,11 +199,11 @@ public class MensaService extends RESTService {
 
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_20",
-      "Menu queried for unsupported mensa. Format: Name of unsupported mensa."
+      "Menu queried for unsupported mensa. Format: id of unsupported mensa."
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_40",
-      "Time in ms to process request. Format: jsonString: 'time': Time is ms,'method': request method as string"
+      "Time in ms to process request. Format: jsonString: 'duration': Time is ms,'method': request method as string"
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_41",
