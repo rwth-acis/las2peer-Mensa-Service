@@ -55,7 +55,7 @@
     </measure>
 
     <measure name="Time spent on chat interactions per week (per user)">
-        <query name="avgTimeSpent">
+        <query name="timeSpent">
 			SELECT sum(time),email FROM(
                 SELECT REMARKS->"$.time" as time, REMARKS->"$.email" as email FROM LAS2PEERMON.MESSAGE 
                 WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_41' AND SOURCE_AGENT = '$SERVICE$' 
@@ -65,17 +65,46 @@
         <visualization type="Value" />
     </measure>
 
-    <measure name="Ratio of Requests made by using the Bot">
-        <query name="MessageReceived">
-        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'
+    <measure name="Ratio of chat requests">
+        <query name="BotRequest">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$' AND REMARKS->"$.msg" like "Botaction"
         </query>
-        <query name="SuccessResponses">
-        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING'  AND SOURCE_AGENT = '$SERVICE$'
+        <query name="AllRequests">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'  AND SOURCE_AGENT = '$SERVICE$'
         </query>
         <visualization type="KPI">
-            <operand name="SuccessResponses" index="0"/>
+            <operand name="BotRequest" index="0"/>
             <operator name="/" index="1"/>
-            <operand name="MessageReceived" index="2"/>
+            <operand name="AllRequests" index="2"/>
+        </visualization>
+    </measure>
+
+    <measure name="Ratio of community application requests">
+        <query name="BotRequest">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$' AND REMARKS->"$.msg" like "Botaction"
+        </query>
+        <query name="AllRequests">
+        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'  AND SOURCE_AGENT = '$SERVICE$'
+        </query>
+        <visualization type="KPI">
+            <operand name="BotRequest" index="0"/>
+            <operator name="/" index="1"/>
+            <operand name="AllRequests" index="2"/>
+        </visualization>
+    </measure>
+
+    <measure name="Distribution of requests">
+        <query name="ReqDistro">
+       SELECT( 
+            SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'  AND SOURCE_AGENT = '$SERVICE$' GROUP BY REMARKS->"$.msg" 
+       )/COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'  AND SOURCE_AGENT = '$SERVICE$'
+        </query>
+
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>ReqDistro</nodeId>
+            <title>Types of requests</title>
+
         </visualization>
     </measure>
 
