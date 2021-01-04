@@ -16,7 +16,16 @@ public class PrematchingRequestFilter implements ContainerRequestFilter {
    */
   @Override
   public void filter(ContainerRequestContext ctx) {
-    Context.get().monitorEvent(MonitoringEvent.MESSAGE_RECEIVED, "");
+    if (
+      ctx.getUriInfo().getPath().matches("review") ||
+      ctx.getUriInfo().getPath().matches("menu")
+    ) {
+      Context.get().monitorEvent(MonitoringEvent.MESSAGE_RECEIVED, "Botaction");
+    } else {
+      Context
+        .get()
+        .monitorEvent(MonitoringEvent.MESSAGE_RECEIVED, "Useraction");
+    }
     ctx.setProperty("timestamp", System.currentTimeMillis());
     MensaService service = (MensaService) Context.getCurrent().getService();
     service.fetchMensas();
