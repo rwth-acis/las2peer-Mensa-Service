@@ -1,3 +1,4 @@
+/*Initializes the table for dish reviews*/
 DROP TABLE IF EXISTS `reviews`;
 CREATE TABLE `reviews`
 (   `id` int(12) NOT NULL PRIMARY KEY AUTO_INCREMENT,

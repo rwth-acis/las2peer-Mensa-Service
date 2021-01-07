@@ -15,8 +15,9 @@ A simple RESTful service for retrieving the current menu of a canteen of the RWT
 
 ## Configuration
 
-First configure the `\etc\i5.las2peer.services.mensaService.MensaService.properties` file with the appropriate database password for your local database.
-Make sure you run all the sql scripts from `etc\db` on your database.
+First configure the `\etc\i5.las2peer.services.mensaService.MensaService.properties` file with your database setup.
+
+Make sure you run the sql script `src\main\i5\las2peer\services\mensaService\database\initDB.sql` on your database. This script initializes the tables needed by the MensaService.
 
 ## Build
 

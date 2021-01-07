@@ -1,3 +1,4 @@
+/*Initializes tables used by the mensa service*/
 DROP TABLE IF EXISTS `dishes`;
 CREATE TABLE `dishes`
 (

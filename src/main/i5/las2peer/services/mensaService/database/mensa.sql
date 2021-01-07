@@ -1,3 +1,4 @@
+/*Initializes the table for mensas*/
 DROP TABLE IF EXISTS `mensas`;
 CREATE TABLE `mensas`
 (

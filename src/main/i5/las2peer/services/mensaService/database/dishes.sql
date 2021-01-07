@@ -1,3 +1,4 @@
+/*Initializes the table for mensa dishes*/
 DROP TABLE IF EXISTS `dishes`;
 CREATE TABLE `dishes`
 (
