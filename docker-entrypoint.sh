@@ -25,9 +25,6 @@ set_in_service_config databasePort ${DATABASE_PORT}
 set_in_service_config databaseUser ${DATABASE_USER}
 set_in_service_config databasePassword ${DATABASE_PASSWORD}
 
-
-
-
 # ensure the database is ready
 while ! mysqladmin ping -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} --silent; do
     echo "Waiting for mysql at ${DATABASE_HOST}:${DATABASE_PORT}..."
@@ -67,10 +64,10 @@ fi
 #prepare pastry properties
 echo external_address = $(curl -s https://ipinfo.io/ip):${LAS2PEER_PORT} > etc/pastry.properties
 
-# start the service within a las2peer node
-if [[ -z "${@}" ]]
-then
-  exec ${LAUNCH_COMMAND} --observer startService\("'""${SERVICE}""'", "'"mensa"'"\) startWebConnector
-else
-  exec ${LAUNCH_COMMAND} ${@}
-fi
+# # start the service within a las2peer node
+# if [[ -z "${@}" ]]
+# then
+  exec ${LAUNCH_COMMAND} --observer startService\("'""${SERVICE}""'", "'"mensa"'"\) 
+# else
+#   exec ${LAUNCH_COMMAND} ${@}
+# fi
