@@ -1,23 +1,4 @@
 /*Initializes tables used by the mensa service*/
-DROP TABLE IF EXISTS `dishes`;
-CREATE TABLE `dishes`
-(
-    `id` int (12) NOT NULL,
-    `mensaId` int (12) NOT NULL,
-      `name` varchar
-        (255) CHARACTER
-        SET utf8
-        COLLATE utf8_general_ci NOT NULL,
-    `category` varchar
-        (255) CHARACTER
-        SET utf8
-        COLLATE utf8_general_ci,
-    PRIMARY KEY (`id`,`mensaId`) USING BTREE,
-    FOREIGN KEY (`mensaId`) REFERENCES mensas(`id`)
-) ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
-SET = utf8
-COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
 DROP TABLE IF EXISTS `mensas`;
 CREATE TABLE `mensas`
 (
@@ -37,9 +18,24 @@ SET utf8
 COLLATE utf8_general_ci,
   PRIMARY KEY
 (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
-SET = utf8
-COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+);
+
+DROP TABLE IF EXISTS `dishes`;
+CREATE TABLE `dishes`
+(
+    `id` int (12) NOT NULL,
+    `mensaId` int (12) NOT NULL REFERENCES mensas(`id`),
+      `name` varchar
+        (255) CHARACTER
+        SET utf8
+        COLLATE utf8_general_ci NOT NULL,
+    `category` varchar
+        (255) CHARACTER
+        SET utf8
+        COLLATE utf8_general_ci,
+    PRIMARY KEY (`id`,`mensaId`) USING BTREE,
+ 
+);
 
 DROP TABLE IF EXISTS `reviews`;
 CREATE TABLE `reviews`
@@ -57,8 +53,9 @@ CREATE TABLE `reviews`
         (255) CHARACTER
         SET utf8
         COLLATE utf8_general_ci ,
-    FOREIGN KEY (`mensaId`) REFERENCES mensas(`id`),
-    FOREIGN KEY (`dishId`) REFERENCES dishes(`id`)
-) ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
+  
+);
+
+ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
 SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;

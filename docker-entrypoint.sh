@@ -31,9 +31,10 @@ while ! mysqladmin ping -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER}
     sleep 1
 done
 echo "${DATABASE_HOST}:${DATABASE_PORT} is available. Continuing..."
+echo "Database password: ${DATABASE_PASSWORD}"
 
 # Create and migrate the database on first run
-if ! mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} -e "desc ${DATABASE_NAME}.MESSAGE" > /dev/null 2>&1; then
+if ! mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} -e "desc ${DATABASE_NAME}.mensas" > /dev/null 2>&1; then
     echo "Creating database schema..."
     mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} ${DATABASE_NAME} < ${CREATE_DB_SQL}
 fi
