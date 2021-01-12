@@ -1,4 +1,8 @@
-/*Initializes tables used by the mensa service*/
+-- ----------------------------
+-- Table structure for mensas
+-- ----------------------------
+SET NAMES utf8mb4;
+
 DROP TABLE IF EXISTS `mensas`;
 CREATE TABLE `mensas`
 (
@@ -18,8 +22,12 @@ SET utf8
 COLLATE utf8_general_ci,
   PRIMARY KEY
 (`id`) USING BTREE
-);
-
+)ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
+SET = utf8
+COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+-- ----------------------------
+-- Table structure for dishes
+-- ----------------------------
 DROP TABLE IF EXISTS `dishes`;
 CREATE TABLE `dishes`
 (
@@ -33,10 +41,14 @@ CREATE TABLE `dishes`
         (255) CHARACTER
         SET utf8
         COLLATE utf8_general_ci,
-    PRIMARY KEY (`id`,`mensaId`) USING BTREE,
+    PRIMARY KEY (`id`,`mensaId`) USING BTREE
  
-);
-
+)ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
+SET = utf8
+COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+-- ----------------------------
+-- Table structure for reviews
+-- ----------------------------
 DROP TABLE IF EXISTS `reviews`;
 CREATE TABLE `reviews`
 (   `id` int(12) NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -52,10 +64,8 @@ CREATE TABLE `reviews`
     `comment` varchar
         (255) CHARACTER
         SET utf8
-        COLLATE utf8_general_ci ,
+        COLLATE utf8_general_ci 
   
-);
-
-ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
+) ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
 SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
