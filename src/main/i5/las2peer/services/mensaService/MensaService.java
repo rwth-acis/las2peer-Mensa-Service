@@ -118,16 +118,7 @@ public class MensaService extends RESTService {
     super();
     setFieldValues();
     this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
-    System.out.println(
-      "MySQL credentials: " +
-      this.databasePassword +
-      ", " +
-      this.databaseName +
-      ", " +
-      this.databaseHost +
-      ", " +
-      this.databasePort
-    );
+
     this.database =
       new SQLDatabase(
         this.databaseType,
