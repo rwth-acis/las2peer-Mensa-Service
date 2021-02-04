@@ -817,7 +817,7 @@ public class MensaService extends RESTService {
       s.setString(1, username);
       s.setInt(2, response.getAsNumber("mensaId").intValue());
       s.setInt(3, id);
-      s.setDate(4, new java.sql.Date(System.currentTimeMillis()));
+      s.setTimestamp(4, new java.sql.Timestamp(System.currentTimeMillis()));
       s.setInt(5, (Integer) response.getAsNumber("stars"));
       s.setString(6, response.getAsString("comment"));
       s.execute();
