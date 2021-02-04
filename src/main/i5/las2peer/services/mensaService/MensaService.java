@@ -133,7 +133,15 @@ public class MensaService extends RESTService {
       "Database credentials: " +
       this.databaseUser +
       ", " +
-      this.databasePassword
+      this.databasePassword +
+      ", " +
+      this.databaseHost +
+      ", " +
+      this.databaseName +
+      ", " +
+      this.databasePort +
+      ", " +
+      this.databaseType
     );
 
     try {
