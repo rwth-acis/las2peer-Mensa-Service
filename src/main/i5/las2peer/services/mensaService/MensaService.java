@@ -128,8 +128,17 @@ public class MensaService extends RESTService {
         this.databaseHost,
         this.databasePort
       );
+
+    System.out.println(
+      "Database credentials: " +
+      this.databaseUser +
+      ", " +
+      this.databasePassword
+    );
+
     try {
       Connection con = database.getDataSource().getConnection();
+
       con.close();
     } catch (SQLException e) {
       e.printStackTrace();
@@ -203,7 +212,7 @@ public class MensaService extends RESTService {
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_40",
-      "Time in ms to process request. Format: jsonString: 'duration': Time is ms,'method': request method as string"
+      "Time in ms to process request. Format: jsonString: 'duration': Time is ms,'url': request method as string"
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_41",

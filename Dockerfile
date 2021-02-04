@@ -5,7 +5,7 @@ ENV DATABASE_NAME=LAS2PEERMON
 ENV DATABASE_HOST=mobsos-mysql.mobsos
 ENV DATABASE_PORT=3306
 ENV DATABASE_USER=root
-ENV DATABASE_PASSWORD=root
+ENV DATABASE_PASSWORD=password
 
 RUN apk add --update bash mysql-client apache-ant curl && rm -f /var/cache/apk/*
 RUN addgroup -g 1000 -S las2peer && \
