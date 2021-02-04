@@ -149,6 +149,9 @@ public class MensaService extends RESTService {
 
       con.close();
     } catch (SQLException e) {
+      Context
+        .get()
+        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_4, e.getMessage());
       e.printStackTrace();
       System.out.println("Failed to connect to Database: " + e.getMessage());
     }
@@ -246,6 +249,10 @@ public class MensaService extends RESTService {
       "Menu could not be fetched. Format: mensa id"
     );
     descriptions.put("SERVICE_CUSTOM_ERROR_3", "Chatexception occured.");
+    descriptions.put(
+      "SERVICE_CUSTOM_ERROR_4",
+      "Could not get connection to database"
+    );
 
     return descriptions;
   }
