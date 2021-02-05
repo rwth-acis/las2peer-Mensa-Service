@@ -1078,8 +1078,8 @@ public class MensaService extends RESTService {
       }
     }
 
-    // urlString += mensaID + "/days/" + date + "/meals";
-    urlString += mensaID + "/days/" + "2020-11-30" + "/meals";
+    urlString += mensaID + "/days/" + date + "/meals";
+    // urlString += mensaID + "/days/" + "2020-11-30" + "/meals";
 
     try {
       URL url = new URL(urlString);
