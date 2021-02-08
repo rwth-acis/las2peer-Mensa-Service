@@ -387,17 +387,14 @@ public class MensaService extends RESTService {
     try {
       mensaMenu = getMensaMenu(id, date);
 
-      if ("html".equals(format)) {
-        returnString = convertToHtml(mensaMenu);
-      } else {
-        returnString = mensaMenu.toString();
-      }
       String responseContentType;
       switch (format) {
         case "html":
+          returnString = convertToHtml(mensaMenu);
           responseContentType = MediaType.TEXT_HTML + ";charset=utf-8";
           break;
         default:
+          returnString = mensaMenu.toString();
           responseContentType = MediaType.APPLICATION_JSON;
       }
 
