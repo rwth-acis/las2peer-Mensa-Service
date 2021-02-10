@@ -556,7 +556,7 @@ public class MensaService extends RESTService {
     JSONObject mensa = null;
     final long start = System.currentTimeMillis();
 
-    System.out.println(body);
+    // System.out.println(body);
     try {
       JSONObject json = (JSONObject) p.parse(body);
       channelId = json.getAsString("channel");
@@ -644,6 +644,13 @@ public class MensaService extends RESTService {
       }
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
+      chatResponse.put("closeContext", false);
+    } catch (NumberFormatException e) {
+      chatResponse.appendField(
+        "text",
+        "Please only provide integer numbers... You provided " +
+        context.get("stars")
+      );
       chatResponse.put("closeContext", false);
     } catch (Exception e) {
       e.printStackTrace();
