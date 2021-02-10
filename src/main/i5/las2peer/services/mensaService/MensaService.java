@@ -341,7 +341,7 @@ public class MensaService extends RESTService {
       .get()
       .monitorEvent(
         MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-        event.toJSONString()
+        event.toString()
       );
     return Response.ok().entity(chatResponse).build();
   }
@@ -752,7 +752,7 @@ public class MensaService extends RESTService {
             .get()
             .monitorEvent(
               MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-              event.toJSONString()
+              event.toString()
             );
         }
       } else {
