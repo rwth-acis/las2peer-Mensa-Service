@@ -836,7 +836,7 @@ public class MensaService extends RESTService {
           .get()
           .monitorEvent(
             MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4,
-            String.valueOf(id)
+            response.toString()
           );
 
         return Response.ok().entity(response).build();
