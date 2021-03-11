@@ -3,6 +3,10 @@ package i5.las2peer.services.mensaService;
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
 import i5.las2peer.api.logging.MonitoringEvent;
+import i5.las2peer.api.persistency.Envelope;
+import i5.las2peer.api.persistency.EnvelopeAccessDeniedException;
+import i5.las2peer.api.persistency.EnvelopeNotFoundException;
+import i5.las2peer.api.persistency.EnvelopeOperationFailedException;
 import i5.las2peer.api.security.UserAgent;
 import i5.las2peer.restMapper.RESTService;
 import i5.las2peer.restMapper.annotations.ServicePath;
@@ -111,11 +115,12 @@ public class MensaService extends RESTService {
   //   "academica",
   //   "ahornstrasse"
   // );
-  // private static final String ENVELOPE_PREFIX = "mensa-";
+  private static final String ENVELOPE_PREFIX = "mensa-";
   // private static final String RATINGS_ENVELOPE_PREFIX =
   //   ENVELOPE_PREFIX + "ratings-";
-  // private static final String PICTURES_ENVELOPE_PREFIX =
-  //   ENVELOPE_PREFIX + "pictures-";
+  private static final String PICTURES_ENVELOPE_PREFIX =
+    ENVELOPE_PREFIX + "pictures-";
+
   // private static final String DISH_INDEX_ENVELOPE_NAME =
   //   ENVELOPE_PREFIX + "dishes";
 
@@ -199,7 +204,7 @@ public class MensaService extends RESTService {
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_4",
-      "Rating added for dish. Format: id of dish."
+      "Rating added for dish. Format: json of rating"
     );
     descriptions.put(
       "SERVICE_CUSTOM_MESSAGE_5",
@@ -646,6 +651,7 @@ public class MensaService extends RESTService {
       ) { //The first step is to find out which canteeen the user visited and what meal he ate
         context.putIfAbsent("review_start", start);
         context.put("currentStep", intent);
+
         if (mensa == null) {
           if (mensaName == null) {
             mensa = (JSONObject) context.get("selected_mensa"); //check if selected mensa has been set before in getMenu
@@ -694,16 +700,14 @@ public class MensaService extends RESTService {
           "Please comment your rating. If you don't want to add a comment just type \"no\""
         );
       } else if ("rejection".equals(intent)) { //this is the case where the bot recognized the mensa or category wrong
-        System.out.println("remove select\n-----------------------------\n");
-
         context.remove("selected_mensa");
         context.remove("selected_dish");
-        chatResponse.appendField("text", "");
+        chatResponse.appendField("text", "Sorry dude 😔");
       } else if ("menu".equals(intent)) { //this is the case where the user specifies the mensa
-        System.out.println("mensa select\n-----------------------------\n");
         ResultSet mensas = findMensas(mensaName, city);
         mensa = selectMensa(mensas, context);
         context.put("selected_mensa", mensa); //save the mensa obj in context for later lookup on submitReview
+        ContextInfo.put(email, context);
         throw new ChatException(
           "Alright, you went to mensa " +
           mensa.getAsString("name") +
@@ -729,11 +733,8 @@ public class MensaService extends RESTService {
 
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
-    if (email != null && context != null) ContextInfo.put(
-      email,
-      context.toJSONString()
-    ); //save context
-
+    if (email != null && context != null) ContextInfo.put(email, context); //save context
+    ContextInfo.put(email, context);
     return Response.ok().entity(chatResponse).build();
   }
 
@@ -832,7 +833,7 @@ public class MensaService extends RESTService {
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
     if (email != null && context != null) {
-      ContextInfo.put(email, context.toJSONString());
+      ContextInfo.put(email, context);
     }
 
     return Response.ok().entity(chatResponse).build();
@@ -1234,7 +1235,7 @@ public class MensaService extends RESTService {
         }
         if (avg >= 1) {
           returnString +=
-            "Average rating: " + String.format("%.2f", avg) + "out of 5 ⭐ \n";
+            "Average rating: " + String.format("%.2f", avg) + " out of 5 ⭐ \n";
         }
         returnString += "\n";
       }
@@ -1542,27 +1543,6 @@ public class MensaService extends RESTService {
     }
   }
 
-  //   private String determineIntentFromLastContext(JSONObject context, String task){
-  //     String oldIntent=context.getAsString("intent");
-  //     String newIntent=null;
-  //     switch (task) {
-  //       case "review":
-  //       newIntent="startReview";
-  //       switch (oldIntent) {
-  //         case "chooseMensaAndMeal":
-  //           newIntent=
-  //           break;
-
-  //         default:
-  //           break;
-  //       }
-  //         break;
-
-  //     }
-
-  // return newIntent;
-  //   }
-
   /** Exceptions ,with messages, that should be returned in Chat */
   protected static class ChatException extends Exception {
 
@@ -1647,6 +1627,7 @@ public class MensaService extends RESTService {
       return Objects.hash(image, author);
     }
   }
+
   // //old implementation using envelopes
 
   // public static int ordinalIndexOf(String str, String substr, int n) {
@@ -1717,26 +1698,26 @@ public class MensaService extends RESTService {
   //   return Response.ok().entity(response).build();
   // }
 
-  // /**
-  //  * Delete a picture for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of pictures.
-  //  */
-  // @DELETE
-  // @Path("/dishes/{dish}/pictures")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // @RolesAllowed("authenticated")
-  // public Response deletePicture(
-  //   @PathParam("dish") String dish,
-  //   Picture picture
-  // )
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_8, dish);
-  //   Map<String, ArrayList<Picture>> response = removePicture(dish, picture);
-  //   return Response.ok().entity(response).build();
-  // }
+  /**
+   * Delete a picture for a dish.
+   *
+   * @param dish Name of the dish.
+   * @return JSON encoded list of pictures.
+   */
+  @DELETE
+  @Path("/dishes/{dish}/pictures")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @RolesAllowed("authenticated")
+  public Response deletePicture(
+    @PathParam("dish") String dish,
+    Picture picture
+  )
+    throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_8, dish);
+    Map<String, ArrayList<Picture>> response = removePicture(dish, picture);
+    return Response.ok().entity(response).build();
+  }
 
   // private HashMap<String, Rating> getRatingsForDish(String dish)
   //   throws EnvelopeOperationFailedException {
@@ -1748,15 +1729,15 @@ public class MensaService extends RESTService {
   //   }
   // }
 
-  // private HashMap<String, ArrayList<Picture>> getPicturesForDish(String dish)
-  //   throws EnvelopeOperationFailedException {
-  //   try {
-  //     Envelope env = getOrCreatePicturesEnvelopeForDish(dish);
-  //     return (HashMap<String, ArrayList<Picture>>) env.getContent();
-  //   } catch (EnvelopeAccessDeniedException e) {
-  //     return new HashMap<>();
-  //   }
-  // }
+  private HashMap<String, ArrayList<Picture>> getPicturesForDish(String dish)
+    throws EnvelopeOperationFailedException {
+    try {
+      Envelope env = getOrCreatePicturesEnvelopeForDish(dish);
+      return (HashMap<String, ArrayList<Picture>>) env.getContent();
+    } catch (EnvelopeAccessDeniedException e) {
+      return new HashMap<>();
+    }
+  }
 
   // private HashMap<String, Rating> storeRating(String dish, Rating rating)
   //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
@@ -1784,39 +1765,39 @@ public class MensaService extends RESTService {
   //   return ratings;
   // }
 
-  // private Map<String, ArrayList<Picture>> storePicture(
-  //   String dish,
-  //   Picture picture
-  // )
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   picture.author = username;
-  //   Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
-  //   HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
-  //   if (!pictures.containsKey(username)) {
-  //     pictures.put(username, new ArrayList<>());
-  //   }
-  //   pictures.get(username).add(picture);
-  //   envelope.setContent(pictures);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return pictures;
-  // }
+  private Map<String, ArrayList<Picture>> storePicture(
+    String dish,
+    Picture picture
+  )
+    throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+    UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+    String username = userAgent.getLoginName();
+    picture.author = username;
+    Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
+    HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
+    if (!pictures.containsKey(username)) {
+      pictures.put(username, new ArrayList<>());
+    }
+    pictures.get(username).add(picture);
+    envelope.setContent(pictures);
+    Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+    return pictures;
+  }
 
-  // private Map<String, ArrayList<Picture>> removePicture(
-  //   String dish,
-  //   Picture picture
-  // )
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
-  //   HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
-  //   pictures.get(username).remove(picture);
-  //   envelope.setContent(pictures);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return pictures;
-  // }
+  private Map<String, ArrayList<Picture>> removePicture(
+    String dish,
+    Picture picture
+  )
+    throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
+    UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
+    String username = userAgent.getLoginName();
+    Envelope envelope = getOrCreatePicturesEnvelopeForDish(dish);
+    HashMap<String, ArrayList<Picture>> pictures = (HashMap<String, ArrayList<Picture>>) envelope.getContent();
+    pictures.get(username).remove(picture);
+    envelope.setContent(pictures);
+    Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+    return pictures;
+  }
 
   // private Envelope getOrCreateRatingsEnvelopeForDish(String dish)
   //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
@@ -1824,38 +1805,37 @@ public class MensaService extends RESTService {
   //   return getOrCreateEnvelope(envelopeName, new HashMap<String, Rating>());
   // }
 
-  // private Envelope getOrCreatePicturesEnvelopeForDish(String dish)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   String envelopeName = PICTURES_ENVELOPE_PREFIX + dish;
-  //   return getOrCreateEnvelope(
-  //     envelopeName,
-  //     new HashMap<String, ArrayList<Picture>>()
-  //   );
-  // }
+  private Envelope getOrCreatePicturesEnvelopeForDish(String dish)
+    throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+    String envelopeName = PICTURES_ENVELOPE_PREFIX + dish;
+    return getOrCreateEnvelope(
+      envelopeName,
+      new HashMap<String, ArrayList<Picture>>()
+    );
+  }
 
   // private Envelope getOrCreateDishIndexEnvelope()
   //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
   //   return getOrCreateEnvelope(DISH_INDEX_ENVELOPE_NAME, new HashSet<>());
   // }
 
-  // private Envelope getOrCreateEnvelope(
-  //   String name,
-  //   Serializable defaultContent
-  // )
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   try {
-  //     return Context.get().requestEnvelope(name);
-  //   } catch (EnvelopeNotFoundException e) {
-  //     Envelope envelope = Context
-  //       .get()
-  //       .createEnvelope(name, Context.get().getServiceAgent());
-  //     envelope.setContent(defaultContent);
-  //     envelope.setPublic();
-  //     Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //     return envelope;
-  //   }
-  // }
-
+  private Envelope getOrCreateEnvelope(
+    String name,
+    Serializable defaultContent
+  )
+    throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+    try {
+      return Context.get().requestEnvelope(name);
+    } catch (EnvelopeNotFoundException e) {
+      Envelope envelope = Context
+        .get()
+        .createEnvelope(name, Context.get().getServiceAgent());
+      envelope.setContent(defaultContent);
+      envelope.setPublic();
+      Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
+      return envelope;
+    }
+  }
   // private String getCurrentTimestamp() {
   //   Date date = new Date(System.currentTimeMillis());
   //   SimpleDateFormat sdf;
