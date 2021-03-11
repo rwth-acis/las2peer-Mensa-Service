@@ -305,6 +305,7 @@ public class MensaService extends RESTService {
           if (selection.size() > selected) {
             mensa = (String) selection.toArray()[selected];
           }
+          intent = context.getAsString("intent");
         }
       } else if (
         "confirmation".equals(intent) &&
@@ -358,7 +359,9 @@ public class MensaService extends RESTService {
         null
       );
       String res = menu;
-      if (!city.equals(context.getAsString("default_city"))) {
+
+      city = mensaObj.getAsString("city");
+      if (city != null && !city.equals(context.getAsString("default_city"))) {
         res +=
           "\n\n Do you want to set " +
           city +
@@ -368,7 +371,7 @@ public class MensaService extends RESTService {
         chatResponse.put("closeContext", false);
       }
 
-      chatResponse.appendField("text", res);
+      chatResponse.put("text", res);
 
       context.put("selected_mensa", mensaObj);
       ContextInfo.put(email, context);
@@ -1421,6 +1424,7 @@ public class MensaService extends RESTService {
     String first = mensas.getString("name"); // first entry
     selection.add(first);
     int id = mensas.getInt("id");
+    String city = mensas.getString("city");
     String response = "I found the following mensas: \n1. " + first + "\n";
 
     int i = 2;
@@ -1433,6 +1437,7 @@ public class MensaService extends RESTService {
     ContextInfo.put(context.getAsString("email"), context);
     if (i == 2) {
       mensa.put("name", first);
+      mensa.put("city", city);
       mensa.put("id", id);
       return mensa;
     } else if (i == maxEntries) {
