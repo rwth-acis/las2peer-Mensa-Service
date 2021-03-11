@@ -33,7 +33,8 @@ public class PrematchingResponseFilter implements ContainerResponseFilter {
       (long) requestContext.getProperty("timestamp");
     System.out.println(processDuration);
     JSONObject monitEvent = new JSONObject();
-    monitEvent.appendField("url", requestContext.getUriInfo().getPath());
+    String basepath = requestContext.getUriInfo().getPath().split("/")[0];
+    monitEvent.appendField("url", basepath);
     monitEvent.appendField("duration", processDuration);
     Context
       .get()

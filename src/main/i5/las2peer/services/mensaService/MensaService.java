@@ -304,6 +304,12 @@ public class MensaService extends RESTService {
       String city = bodyJson.getAsString("city");
       JSONObject context = getContext(email, p);
       String intent = bodyJson.getAsString("intent");
+      if ("quit".equals(intent)) {
+        chatResponse.put("text", "Alright. 🙃");
+        chatResponse.put("closeContext", true);
+        return Response.ok(chatResponse).build();
+      }
+
       if ("number_selection".equals(intent)) {
         if (context.get("currentSelection") instanceof Set<?>) {
           Set<Object> selection = (Set<Object>) context.get("currentSelection");
