@@ -678,7 +678,7 @@ public class MensaService extends RESTService {
           mensa.getAsString("name") +
           ".\n Is this correct?"
         );
-      } else if ("averageStars".equals(json.getAsString("intent"))) { //This is the second step, where the user is specifiying how many stars he gives the dish
+      } else if ("averageStars".equals(intent)) { //This is the second step, where the user is specifiying how many stars he gives the dish
         int s = stars.intValue();
 
         if (s < 1 || s > 5) {
@@ -690,13 +690,13 @@ public class MensaService extends RESTService {
           "text",
           "Please comment your rating. If you don't want to add a comment just type \"no\""
         );
-      } else if ("rejection".equals(json.getAsString("intent"))) { //this is the case where the bot recognized the mensa or category wrong
+      } else if ("rejection".equals(intent)) { //this is the case where the bot recognized the mensa or category wrong
         System.out.println("remove select\n-----------------------------\n");
 
         context.remove("selected_mensa");
         context.remove("selected_dish");
         chatResponse.appendField("text", "");
-      } else if ("menu".equals(json.getAsString("intent"))) { //this is the case where the user specifies the mensa
+      } else if ("menu".equals(intent)) { //this is the case where the user specifies the mensa
         System.out.println("mensa select\n-----------------------------\n");
         ResultSet mensas = findMensas(mensaName, city);
         mensa = selectMensa(mensas, context);
