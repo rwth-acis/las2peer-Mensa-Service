@@ -634,7 +634,7 @@ public class MensaService extends RESTService {
       mensaName = context.getAsString("mensa"); //name of mensa specified by the user
       String category = context.getAsString("category"); //category specified by the user
       String city = context.getAsString("city"); //city specified by the user
-      Number stars = context.getAsNumber("stars"); //stars specified by the user
+      Number stars = context.getAsNumber("number"); //stars specified by the user
 
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
       context.put("lastStep", intent);
@@ -678,7 +678,7 @@ public class MensaService extends RESTService {
           mensa.getAsString("name") +
           ".\n Is this correct?"
         );
-      } else if ("averageStars".equals(intent)) { //This is the second step, where the user is specifiying how many stars he gives the dish
+      } else if ("stars".equals(intent) || "number_selection".equals(intent)) { //This is the second step, where the user is specifiying how many stars he gives the dish
         int s = stars.intValue();
 
         if (s < 1 || s > 5) {
