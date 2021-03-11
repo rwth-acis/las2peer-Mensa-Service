@@ -625,6 +625,7 @@ public class MensaService extends RESTService {
           mensaName = (String) selection.toArray()[selected];
         }
         intent = "chooseMensaAndMeal";
+        context.remove("currentStep");
       }
 
       context = updateContext(json, context);
@@ -637,12 +638,12 @@ public class MensaService extends RESTService {
       Number stars = context.getAsNumber("number"); //stars specified by the user
 
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
-      context.put("lastStep", intent);
+
       if (
         "chooseMensaAndMeal".equals(intent) || "confirmation".equals(intent)
       ) { //The first step is to find out which canteeen the user visited and what meal he ate
         context.putIfAbsent("review_start", start);
-
+        context.put("currentStep", intent);
         if (mensa == null) {
           if (mensaName == null) {
             mensa = (JSONObject) context.get("selected_mensa"); //check if selected mensa has been set before in getMenu
