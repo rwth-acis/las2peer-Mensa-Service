@@ -56,6 +56,7 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
+import org.web3j.tuples.Tuple;
 
 /**
  * las2peer-Mensa-Service
@@ -318,11 +319,11 @@ public class MensaService extends RESTService {
         ContextInfo.put(email, context);
 
         chatResponse.put("text", "Alright. Done! 🎉");
-        chatResponse.put("closeContext", false);
+        chatResponse.put("closeContext", true);
         return Response.ok().entity(chatResponse).build();
       } else if ("rejection".equals(intent)) {
         chatResponse.put("text", "Alright. 🙃");
-        chatResponse.put("closeContext", false);
+        chatResponse.put("closeContext", true);
       }
 
       event.put("email", email);
