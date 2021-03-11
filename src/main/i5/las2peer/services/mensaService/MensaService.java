@@ -620,7 +620,11 @@ public class MensaService extends RESTService {
       JSONObject json = (JSONObject) p.parse(body);
       email = json.getAsString("email");
       String intent = json.getAsString("intent");
-      //TODO handle case for intent number_selection
+      if ("quit".equals(intent)) {
+        chatResponse.put("text", "Alright. 🙃");
+        chatResponse.put("closeContext", true);
+        return Response.ok(chatResponse).build();
+      }
 
       context = getContext(email, p);
 
