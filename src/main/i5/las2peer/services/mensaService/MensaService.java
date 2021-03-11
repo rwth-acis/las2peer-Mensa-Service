@@ -29,11 +29,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -89,7 +93,7 @@ public class MensaService extends RESTService {
 
   private static HashMap<Integer, Date> lastDishUpdate = new HashMap<>();
   private static Date lastMensasUpdate;
-  private static HashMap<String, String> ContextInfo = new HashMap<String, String>();
+  private static HashMap<String, Object> ContextInfo = new HashMap<String, Object>();
   private final int maxEntries = 20;
 
   private String databaseName;
@@ -292,11 +296,38 @@ public class MensaService extends RESTService {
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
 
-      String channelId = bodyJson.getAsString("channel");
       String email = bodyJson.getAsString("email");
+
       String mensa = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
-      JSONObject context = getContext(channelId, p, email);
+      JSONObject context = getContext(email, p);
+      String intent = bodyJson.getAsString("intent");
+      if ("number_selection".equals(intent)) {
+        if (context.get("currentSelection") instanceof Set<?>) {
+          Set<Object> selection = (Set<Object>) context.get("currentSelection");
+          int selected = bodyJson.getAsNumber("number").intValue() - 1;
+          if (selection.size() > selected) {
+            mensa = (String) selection.toArray()[selected];
+          }
+        }
+      } else if (
+        "confirmation".equals(intent) &&
+        context.getAsString("selected_city") != null
+      ) {
+        //user wants to set default city
+        city = context.getAsString("selected_city");
+        context.put("default_city", city);
+        context.remove("selected_city");
+        ContextInfo.put(email, context);
+
+        chatResponse.put("text", "Alright. Done! 🎉");
+        chatResponse.put("closeContext", false);
+        return Response.ok().entity(chatResponse).build();
+      } else if ("rejection".equals(intent)) {
+        chatResponse.put("text", "Alright. 🙃");
+        chatResponse.put("closeContext", false);
+      }
+
       event.put("email", email);
       event.put("task", "getMenu");
 
@@ -308,11 +339,15 @@ public class MensaService extends RESTService {
           "Please specify the mensa, for which you want to get the menu."
         );
       }
+
+      if (city == null) {
+        city = context.getAsString("default_city");
+      }
       ResultSet mensas;
 
       mensas = findMensas(mensa, city);
 
-      JSONObject mensaObj = selectMensa(mensas);
+      JSONObject mensaObj = selectMensa(mensas, context);
 
       Context
         .get()
@@ -326,10 +361,20 @@ public class MensaService extends RESTService {
         mensaObj.getAsNumber("id").intValue(),
         null
       );
+      String res = menu;
+      if (!city.equals(context.getAsString("default_city"))) {
+        res +=
+          "\n\n Do you want to set " +
+          city +
+          " as your default city?\nThis helps me to find your mensa better next time 🙂";
+        context.put("selected_city", city);
+        chatResponse.put("closeContext", false);
+      }
 
-      chatResponse.appendField("text", menu);
+      chatResponse.appendField("text", res);
+
       context.put("selected_mensa", mensaObj);
-      ContextInfo.put(channelId, context.toJSONString());
+      ContextInfo.put(email, context.toJSONString());
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
     } catch (Exception e) {
@@ -549,7 +594,7 @@ public class MensaService extends RESTService {
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
-    String channelId = null;
+    String email = null;
     JSONObject context = null; //holds the context between the user and the bot
     JSONObject chatResponse = new JSONObject();
     JSONObject dish = null;
@@ -559,9 +604,9 @@ public class MensaService extends RESTService {
     // System.out.println(body);
     try {
       JSONObject json = (JSONObject) p.parse(body);
-      channelId = json.getAsString("channel");
+      email = json.getAsString("email");
 
-      context = getContext(channelId, p);
+      context = getContext(email, p);
       context = updateContext(json, context);
 
       mensa = (JSONObject) context.get("selected_mensa"); //mensa object
@@ -573,6 +618,8 @@ public class MensaService extends RESTService {
 
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
 
+      //TODO handle case for intent number_selection
+
       if (
         "chooseMensaAndMeal".equals(json.getAsString("intent")) ||
         "confirmation".equals(json.getAsString("intent"))
@@ -580,14 +627,14 @@ public class MensaService extends RESTService {
         context.putIfAbsent("review_start", start);
         if (mensa == null) {
           if (mensaName == null) {
-            mensa = (JSONObject) context.get("default_mensa"); //check if default mensa has been set TODO: actually implement this in getMenu
+            mensa = (JSONObject) context.get("selected_mensa"); //check if selected mensa has been set before in getMenu
             if (mensa == null) throw new ChatException(
               "I could not determine the mensa, you visited 🙁. Could you please repeat that? 😇"
             );
             mensaName = mensa.getAsString("name");
           }
           ResultSet mensas = findMensas(mensaName, city);
-          mensa = selectMensa(mensas);
+          mensa = selectMensa(mensas, context);
           context.put("selected_mensa", mensa); //save the mensa obj in context for later lookup on submitReview
         }
         if (dish == null) {
@@ -634,7 +681,7 @@ public class MensaService extends RESTService {
       } else if ("menu".equals(json.getAsString("intent"))) { //this is the case where the user specifies the mensa
         System.out.println("mensa select\n-----------------------------\n");
         ResultSet mensas = findMensas(mensaName, city);
-        mensa = selectMensa(mensas);
+        mensa = selectMensa(mensas, context);
         context.put("selected_mensa", mensa); //save the mensa obj in context for later lookup on submitReview
         throw new ChatException(
           "Alright, you went to mensa " +
@@ -661,8 +708,8 @@ public class MensaService extends RESTService {
 
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
-    if (channelId != null && context != null) ContextInfo.put(
-      channelId,
+    if (email != null && context != null) ContextInfo.put(
+      email,
       context.toJSONString()
     ); //save context
 
@@ -684,17 +731,16 @@ public class MensaService extends RESTService {
     JSONObject context = null;
     JSONObject chatResponse = new JSONObject();
     JSONObject event = new JSONObject();
-    String channelId = null;
+    String email = null;
     event.put("task", "review");
 
     try {
       JSONObject json = (JSONObject) p.parse(body);
-      channelId = json.getAsString("channel");
+      email = json.getAsString("email");
 
-      context = getContext(channelId, p);
+      context = getContext(email, p);
       context = updateContext(json, context);
 
-      String email = context.getAsString("email");
       event.put("email", email);
 
       boolean containsComment =
@@ -764,8 +810,8 @@ public class MensaService extends RESTService {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
     }
-    if (channelId != null && context != null) {
-      ContextInfo.put(channelId, context.toJSONString());
+    if (email != null && context != null) {
+      ContextInfo.put(email, context.toJSONString());
     }
 
     return Response.ok().entity(chatResponse).build();
@@ -1346,23 +1392,28 @@ public class MensaService extends RESTService {
    * @throws ChatException the error message contains a list of mensas in the set
    * @throws SQLException thrown if a db error occured
    */
-  private JSONObject selectMensa(ResultSet mensas)
+  private JSONObject selectMensa(ResultSet mensas, JSONObject context)
     throws ChatException, SQLException {
     JSONObject mensa = new JSONObject();
+    Set<String> selection = new HashSet<String>();
 
     if (!mensas.next()) throw new ChatException(
       "Sorry, I could not find a mensa with that name. 💁"
     );
 
     String first = mensas.getString("name"); // first entry
+    selection.add(first);
     int id = mensas.getInt("id");
-    String response = "I found the following mensas: \n- " + first + "\n";
+    String response = "I found the following mensas: \n1. " + first + "\n";
 
     int i = 2;
     while (mensas.next() && i < maxEntries) { //at least 2 entries
-      response += "- " + mensas.getString("name") + "\n";
+      response += i + ". " + mensas.getString("name") + "\n";
+      selection.add(mensas.getString("name"));
       i++;
     }
+    context.put("currentSelection", selection);
+    ContextInfo.put(context.getAsString("email"), context);
     if (i == 2) {
       mensa.put("name", first);
       mensa.put("id", id);
@@ -1395,30 +1446,30 @@ public class MensaService extends RESTService {
     return context;
   }
 
-  private JSONObject getContext(String channelId, JSONParser p, String email)
-    throws ParseException {
-    String obj = ContextInfo.get(channelId);
-    //  System.out.println("contex for channel " + channelId + ": " + obj);
-    if (obj != null) {
-      JSONObject context = (JSONObject) p.parse(obj);
-      if (
-        email != null &&
-        !"".equals(email) &&
-        context.getAsString("email") != null
-      ) {
-        context.appendField("email", email);
-      }
-      return context;
-    }
-    return new JSONObject();
-  }
+  // private JSONObject getContext(String email, JSONParser p)
+  //   throws ParseException {
+  //   String obj = ContextInfo.get(email);
+  //   //  System.out.println("contex for email " + email + ": " + obj);
+  //   if (obj != null) {
+  //     JSONObject context = (JSONObject) p.parse(obj);
+  //     if (
+  //       email != null &&
+  //       !"".equals(email) &&
+  //       context.getAsString("email") != null
+  //     ) {
+  //       context.appendField("email", email);
+  //     }
+  //     return context;
+  //   }
+  //   return new JSONObject();
+  // }
 
-  private JSONObject getContext(String channelId, JSONParser p)
+  private JSONObject getContext(String email, JSONParser p)
     throws ParseException {
-    String obj = ContextInfo.get(channelId);
-    //  System.out.println("contex for channel " + channelId + ": " + obj);
-    if (obj != null) {
-      JSONObject context = (JSONObject) p.parse(obj);
+    Object obj = ContextInfo.get(email);
+
+    if (obj instanceof JSONObject) {
+      JSONObject context = (JSONObject) (obj);
 
       return context;
     }
