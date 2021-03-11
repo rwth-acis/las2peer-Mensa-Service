@@ -599,32 +599,50 @@ public class MensaService extends RESTService {
     JSONObject chatResponse = new JSONObject();
     JSONObject dish = null;
     JSONObject mensa = null;
+    String mensaName = null;
     final long start = System.currentTimeMillis();
 
     // System.out.println(body);
     try {
       JSONObject json = (JSONObject) p.parse(body);
       email = json.getAsString("email");
+      String intent = json.getAsString("intent");
+      //TODO handle case for intent number_selection
 
       context = getContext(email, p);
+
+      String lastStep = context.getAsString("currentStep");
+      if (
+        "chooseMensaAndMeal".equals(lastStep) &&
+        "number_selection".equals(intent)
+      ) {
+        //the user had specified the mensa not clearly enough and has now chosen a mensa from the suggested list
+        int selected = json.getAsNumber("number").intValue() - 1; //selection starts at 1
+        HashSet<String> selection = (HashSet<String>) context.get(
+          "currentSelection"
+        );
+        if (selected < selection.size()) {
+          mensaName = (String) selection.toArray()[selected];
+        }
+        intent = "chooseMensaAndMeal";
+      }
+
       context = updateContext(json, context);
 
       mensa = (JSONObject) context.get("selected_mensa"); //mensa object
       dish = (JSONObject) context.get("selected_dish"); //dish object
-      String mensaName = context.getAsString("mensa"); //name of mensa specified by the user
+      mensaName = context.getAsString("mensa"); //name of mensa specified by the user
       String category = context.getAsString("category"); //category specified by the user
       String city = context.getAsString("city"); //city specified by the user
       Number stars = context.getAsNumber("stars"); //stars specified by the user
 
       String date = null; //currently only review for food of current day. TODO: adjust such that user can add reviews for certain date
-
-      //TODO handle case for intent number_selection
-
+      context.put("lastStep", intent);
       if (
-        "chooseMensaAndMeal".equals(json.getAsString("intent")) ||
-        "confirmation".equals(json.getAsString("intent"))
+        "chooseMensaAndMeal".equals(intent) || "confirmation".equals(intent)
       ) { //The first step is to find out which canteeen the user visited and what meal he ate
         context.putIfAbsent("review_start", start);
+
         if (mensa == null) {
           if (mensaName == null) {
             mensa = (JSONObject) context.get("selected_mensa"); //check if selected mensa has been set before in getMenu
@@ -1213,7 +1231,7 @@ public class MensaService extends RESTService {
         }
         if (avg >= 1) {
           returnString +=
-            "Average rating: " + String.format("%.2f", avg) + "⭐ \n";
+            "Average rating: " + String.format("%.2f", avg) + "out of 5 ⭐ \n";
         }
         returnString += "\n";
       }
@@ -1518,6 +1536,27 @@ public class MensaService extends RESTService {
         return -1;
     }
   }
+
+  //   private String determineIntentFromLastContext(JSONObject context, String task){
+  //     String oldIntent=context.getAsString("intent");
+  //     String newIntent=null;
+  //     switch (task) {
+  //       case "review":
+  //       newIntent="startReview";
+  //       switch (oldIntent) {
+  //         case "chooseMensaAndMeal":
+  //           newIntent=
+  //           break;
+
+  //         default:
+  //           break;
+  //       }
+  //         break;
+
+  //     }
+
+  // return newIntent;
+  //   }
 
   /** Exceptions ,with messages, that should be returned in Chat */
   protected static class ChatException extends Exception {
