@@ -288,11 +288,7 @@ public class MensaService extends RESTService {
     JSONObject chatResponse = new JSONObject();
     final long start = System.currentTimeMillis();
     JSONObject event = new JSONObject();
-
-    // UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-    // System.out.println(userAgent.getLoginName());
-    // System.out.println(userAgent.getEmail());
-
+    System.out.println(body);
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
 
@@ -368,15 +364,17 @@ public class MensaService extends RESTService {
           city +
           " as your default city?\nThis helps me to find your mensa better next time 🙂";
         context.put("selected_city", city);
+        ContextInfo.put(email, context);
         chatResponse.put("closeContext", false);
       }
 
       chatResponse.appendField("text", res);
 
       context.put("selected_mensa", mensaObj);
-      ContextInfo.put(email, context.toJSONString());
+      ContextInfo.put(email, context);
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
+      chatResponse.put("closeContext", false);
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
