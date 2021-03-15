@@ -294,67 +294,65 @@ public class MensaService extends RESTService {
     JSONObject chatResponse = new JSONObject();
     final long start = System.currentTimeMillis();
     JSONObject event = new JSONObject();
-    System.out.println(body);
+    System.out.println("Body " + body);
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
 
       String email = bodyJson.getAsString("email");
-
       String mensa = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
       JSONObject context = getContext(email, p);
       String intent = bodyJson.getAsString("intent");
-      if ("quit".equals(intent)) {
-        chatResponse.put("text", "Alright. 🙃");
-        chatResponse.put("closeContext", true);
-        return Response.ok(chatResponse).build();
-      }
-
-      if ("number_selection".equals(intent)) {
-        if (context.get("currentSelection") instanceof Set<?>) {
-          Set<Object> selection = (Set<Object>) context.get("currentSelection");
-          int selected = bodyJson.getAsNumber("number").intValue() - 1;
-          if (selection.size() > selected) {
-            mensa = (String) selection.toArray()[selected];
-          }
-          intent = context.getAsString("intent");
-        }
-      } else if (
-        "confirmation".equals(intent) &&
-        context.getAsString("selected_city") != null
-      ) {
-        //user wants to set default city
-        city = context.getAsString("selected_city");
-        context.put("default_city", city);
-        context.remove("selected_city");
-        ContextInfo.put(email, context);
-
-        chatResponse.put("text", "Alright. Done! 🎉");
-        chatResponse.put("closeContext", true);
-        return Response.ok().entity(chatResponse).build();
-      } else if ("rejection".equals(intent)) {
-        chatResponse.put("text", "Alright. 🙃");
-        chatResponse.put("closeContext", true);
-      }
-
+      System.out.println("Context " + context);
       event.put("email", email);
       event.put("task", "getMenu");
 
-      context = updateContext(bodyJson, context);
+      switch (intent) {
+        case "quit":
+          chatResponse.put("text", "Alright. 🙃");
+          chatResponse.put("closeContext", true);
+          return Response.ok(chatResponse).build();
+        case "rejection":
+          chatResponse.put("text", "Alright. 😐");
+          chatResponse.put("closeContext", true);
+          return Response.ok(chatResponse).build();
+        case "confirmation":
+          if (context.getAsString("selected_city") != null) {
+            //user wants to set default city
+            city = context.getAsString("selected_city");
+            context.put("default_city", city);
+            context.remove("selected_city");
+            ContextInfo.put(email, context);
 
+            chatResponse.put("text", "Alright. Done! 🎉");
+            chatResponse.put("closeContext", true);
+            return Response.ok().entity(chatResponse).build();
+          }
+        case "number_selection":
+          if (context.get("currentSelection") instanceof Set<?>) {
+            Set<Object> selection = (Set<Object>) context.get(
+              "currentSelection"
+            );
+            int selected = bodyJson.getAsNumber("number").intValue() - 1;
+            if (selection.size() > selected) {
+              mensa = (String) selection.toArray()[selected];
+            }
+            intent = context.getAsString("intent"); //get the previous intent from context
+          }
+          break;
+      }
+
+      context = updateContext(bodyJson, context);
+      if (city == null) {
+        city = context.getAsString("default_city");
+      }
       if (mensa == null) {
-        mensa = context.getAsString("default_mensa"); // see if user has chosen a default_mensa
-        if (mensa == null) throw new ChatException(
+        throw new ChatException(
           "Please specify the mensa, for which you want to get the menu."
         );
       }
 
-      if (city == null) {
-        city = context.getAsString("default_city");
-      }
-      ResultSet mensas;
-
-      mensas = findMensas(mensa, city);
+      ResultSet mensas = findMensas(mensa, city);
 
       JSONObject mensaObj = selectMensa(mensas, context);
 
@@ -382,26 +380,29 @@ public class MensaService extends RESTService {
         ContextInfo.put(email, context);
         chatResponse.put("closeContext", false);
       }
-
       chatResponse.put("text", res);
 
       context.put("selected_mensa", mensaObj);
       ContextInfo.put(email, context);
+
+      event.put("time", System.currentTimeMillis() - start);
+      Context
+        .get()
+        .monitorEvent(
+          MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+          event.toString()
+        );
+
+      return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
       chatResponse.put("closeContext", false);
+      return Response.ok().entity(chatResponse).build();
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
+      return Response.ok(chatResponse).build();
     }
-    event.put("time", System.currentTimeMillis() - start);
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-        event.toString()
-      );
-    return Response.ok().entity(chatResponse).build();
   }
 
   /**
@@ -613,7 +614,6 @@ public class MensaService extends RESTService {
     JSONObject dish = null;
     JSONObject mensa = null;
     String mensaName = null;
-    final long start = System.currentTimeMillis();
 
     // System.out.println(body);
     try {
@@ -628,10 +628,11 @@ public class MensaService extends RESTService {
 
       context = getContext(email, p);
 
-      String lastStep = context.getAsString("currentStep");
+      String lastStep = context.getAsString("intent");
       if (
+        context.get("currentSelection") != null &&
         "chooseMensaAndMeal".equals(lastStep) &&
-        "number_selection".equals(intent)
+        ("number_selection".equals(intent) || "stars".equals(intent))
       ) {
         //the user had specified the mensa not clearly enough and has now chosen a mensa from the suggested list
         int selected = json.getAsNumber("number").intValue() - 1; //selection starts at 1
@@ -641,8 +642,11 @@ public class MensaService extends RESTService {
         if (selected < selection.size()) {
           mensaName = (String) selection.toArray()[selected];
         }
+        System.out.println("User chose " + mensaName);
         intent = "chooseMensaAndMeal";
-        context.remove("currentStep");
+        context.put("intent", intent);
+        context.remove("currentSelection");
+        ContextInfo.put(email, context);
       }
 
       context = updateContext(json, context);
@@ -659,8 +663,7 @@ public class MensaService extends RESTService {
       if (
         "chooseMensaAndMeal".equals(intent) || "confirmation".equals(intent)
       ) { //The first step is to find out which canteeen the user visited and what meal he ate
-        context.putIfAbsent("review_start", start);
-        context.put("currentStep", intent);
+        context.putIfAbsent("review_start", System.currentTimeMillis());
 
         if (mensa == null) {
           if (mensaName == null) {
@@ -712,7 +715,6 @@ public class MensaService extends RESTService {
       } else if ("rejection".equals(intent)) { //this is the case where the bot recognized the mensa or category wrong
         context.remove("selected_mensa");
         context.remove("selected_dish");
-        chatResponse.appendField("text", "Sorry dude 😔");
       } else if ("menu".equals(intent)) { //this is the case where the user specifies the mensa
         ResultSet mensas = findMensas(mensaName, city);
         mensa = selectMensa(mensas, context);
