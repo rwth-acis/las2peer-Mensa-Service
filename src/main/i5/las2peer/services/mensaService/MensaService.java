@@ -338,6 +338,8 @@ public class MensaService extends RESTService {
               mensa = (String) selection.toArray()[selected];
             }
             intent = context.getAsString("intent"); //get the previous intent from context
+            context.remove("currentSelection");
+            ContextInfo.put(email, context);
           }
           break;
       }
@@ -607,6 +609,7 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
+    System.out.println("Body " + body);
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     String email = null;
     JSONObject context = null; //holds the context between the user and the bot
@@ -620,6 +623,7 @@ public class MensaService extends RESTService {
       JSONObject json = (JSONObject) p.parse(body);
       email = json.getAsString("email");
       String intent = json.getAsString("intent");
+
       if ("quit".equals(intent)) {
         chatResponse.put("text", "Alright. 🙃");
         chatResponse.put("closeContext", true);
@@ -628,20 +632,27 @@ public class MensaService extends RESTService {
 
       context = getContext(email, p);
 
+      System.out.println("Context " + context);
       String lastStep = context.getAsString("intent");
       if (
+        "number_selection".equals(intent) &&
         context.get("currentSelection") != null &&
-        "chooseMensaAndMeal".equals(lastStep) &&
-        ("number_selection".equals(intent) || "stars".equals(intent))
+        "chooseMensaAndMeal".equals(lastStep)
       ) {
         //the user had specified the mensa not clearly enough and has now chosen a mensa from the suggested list
         int selected = json.getAsNumber("number").intValue() - 1; //selection starts at 1
         HashSet<String> selection = (HashSet<String>) context.get(
           "currentSelection"
         );
+
         if (selected < selection.size()) {
           mensaName = (String) selection.toArray()[selected];
         }
+        selection.forEach(
+          select -> {
+            System.out.println(select);
+          }
+        );
         System.out.println("User chose " + mensaName);
         intent = "chooseMensaAndMeal";
         context.put("intent", intent);
@@ -1447,8 +1458,7 @@ public class MensaService extends RESTService {
       selection.add(mensas.getString("name"));
       i++;
     }
-    context.put("currentSelection", selection);
-    ContextInfo.put(context.getAsString("email"), context);
+
     if (i == 2) {
       mensa.put("name", first);
       mensa.put("city", city);
@@ -1460,6 +1470,11 @@ public class MensaService extends RESTService {
       response += "and " + (total - maxEntries) + " more...\n";
       response +=
         "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
+    }
+    if (i != 2) {
+      //save selection in context
+      context.put("currentSelection", selection);
+      ContextInfo.put(context.getAsString("email"), context);
     }
     response += "Please specify your mensa.";
     throw new ChatException(response);
