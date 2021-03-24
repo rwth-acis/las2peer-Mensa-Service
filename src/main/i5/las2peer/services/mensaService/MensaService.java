@@ -329,13 +329,11 @@ public class MensaService extends RESTService {
             return Response.ok().entity(chatResponse).build();
           }
         case "number_selection":
-          if (context.get("currentSelection") instanceof Set<?>) {
-            Set<Object> selection = (Set<Object>) context.get(
-              "currentSelection"
-            );
+          if (context.get("currentSelection") instanceof String[]) {
+            String[] selection = (String[]) context.get("currentSelection");
             int selected = bodyJson.getAsNumber("number").intValue() - 1;
-            if (selection.size() > selected) {
-              mensa = (String) selection.toArray()[selected];
+            if (selection.length > selected) {
+              mensa = selection[selected];
             }
             intent = context.getAsString("intent"); //get the previous intent from context
             context.remove("currentSelection");
@@ -347,11 +345,11 @@ public class MensaService extends RESTService {
       context = updateContext(bodyJson, context);
       if (city == null) {
         city = context.getAsString("default_city");
-      }
-      if (mensa == null) {
-        throw new ChatException(
-          "Please specify the mensa, for which you want to get the menu."
-        );
+        if (mensa == null) {
+          throw new ChatException(
+            "Please specify the mensa, for which you want to get the menu."
+          );
+        }
       }
 
       ResultSet mensas = findMensas(mensa, city);
@@ -641,18 +639,12 @@ public class MensaService extends RESTService {
       ) {
         //the user had specified the mensa not clearly enough and has now chosen a mensa from the suggested list
         int selected = json.getAsNumber("number").intValue() - 1; //selection starts at 1
-        HashSet<String> selection = (HashSet<String>) context.get(
-          "currentSelection"
-        );
+        String[] selection = (String[]) context.get("currentSelection");
 
-        if (selected < selection.size()) {
-          mensaName = (String) selection.toArray()[selected];
+        if (selected < selection.length) {
+          mensaName = selection[selected];
         }
-        selection.forEach(
-          select -> {
-            System.out.println(select);
-          }
-        );
+
         System.out.println("User chose " + mensaName);
         intent = "chooseMensaAndMeal";
         context.put("intent", intent);
@@ -664,7 +656,7 @@ public class MensaService extends RESTService {
 
       mensa = (JSONObject) context.get("selected_mensa"); //mensa object
       dish = (JSONObject) context.get("selected_dish"); //dish object
-      mensaName = context.getAsString("mensa"); //name of mensa specified by the user
+      if (mensaName == null) mensaName = context.getAsString("mensa"); //name of mensa specified by the user
       String category = context.getAsString("category"); //category specified by the user
       String city = context.getAsString("city"); //city specified by the user
       Number stars = context.getAsNumber("number"); //stars specified by the user
@@ -1129,14 +1121,20 @@ public class MensaService extends RESTService {
     Connection dbConnection = null;
     PreparedStatement statement = null;
     ResultSet res;
+    String query;
+    if (mensaName != null) {
+      query = "SELECT * FROM mensas WHERE city LIKE ? AND name LIKE ?";
+    } else {
+      query = "SELECT * FROM mensas WHERE city LIKE ?";
+    }
     try {
       dbConnection = getDatabaseConnection();
-      statement =
-        dbConnection.prepareStatement(
-          "SELECT * FROM mensas WHERE name LIKE ? AND city LIKE ?"
-        );
-      statement.setString(1, "%" + mensaName + "%");
-      statement.setString(2, city);
+      statement = dbConnection.prepareStatement(query);
+      statement.setString(1, "%" + city + "%");
+      if (mensaName != null) {
+        statement.setString(2, "%" + mensaName + "%");
+      }
+
       res = statement.executeQuery();
       return res;
     } catch (Exception e) {
@@ -1440,22 +1438,23 @@ public class MensaService extends RESTService {
   private JSONObject selectMensa(ResultSet mensas, JSONObject context)
     throws ChatException, SQLException {
     JSONObject mensa = new JSONObject();
-    Set<String> selection = new HashSet<String>();
 
     if (!mensas.next()) throw new ChatException(
       "Sorry, I could not find a mensa with that name. 💁"
     );
 
     String first = mensas.getString("name"); // first entry
-    selection.add(first);
+
     int id = mensas.getInt("id");
     String city = mensas.getString("city");
     String response = "I found the following mensas: \n1. " + first + "\n";
 
     int i = 2;
+
+    String[] selection = new String[maxEntries];
     while (mensas.next() && i < maxEntries) { //at least 2 entries
       response += i + ". " + mensas.getString("name") + "\n";
-      selection.add(mensas.getString("name"));
+      selection[i] = mensas.getString("name");
       i++;
     }
 
