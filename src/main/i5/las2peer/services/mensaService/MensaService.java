@@ -406,6 +406,63 @@ public class MensaService extends RESTService {
   }
 
   /**
+   * Lookup all available mensas
+   * @param city optionally add this as a query parameter to find mensas in a particular city
+   * @return array of mensas
+   */
+  @GET
+  @Path("/find")
+  @ApiOperation(
+    value = "Get the menu of a mensa",
+    notes = "The mensa must be supported with the Studierendenwerk in Aachen."
+  )
+  @ApiResponses(
+    value = {
+      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Menu received"),
+      @ApiResponse(
+        code = HttpURLConnection.HTTP_NOT_FOUND,
+        message = "Mensa not supported"
+      ),
+    }
+  )
+  public Response getSupportedMensas(@QueryParam("city") String city) {
+    Response res = null;
+    Connection dbConnection = null;
+    PreparedStatement statement = null;
+    JSONArray mensas = new JSONArray();
+    ResultSet rs;
+    String query;
+    if (city != null) {
+      query = "SELECT * FROM mensas WHERE name LIKE ?";
+    } else {
+      query = "SELECT * FROM mensas ";
+    }
+    try {
+      dbConnection = getDatabaseConnection();
+      statement = dbConnection.prepareStatement(query);
+      if (city != null) {
+        statement.setString(1, "%" + city + "%");
+      }
+
+      rs = statement.executeQuery();
+      while (rs.next()) {
+        JSONObject mensa = new JSONObject();
+        mensa.put("id", rs.getInt("id"));
+        mensa.put("name", rs.getString("name"));
+        mensa.put("city", rs.getString("city"));
+        mensa.put("address", rs.getString("address"));
+        mensas.add(mensa);
+      }
+      res = Response.ok(mensas).build();
+    } catch (Exception e) {
+      e.printStackTrace();
+      return Response.status(500).build();
+    }
+
+    return res;
+  }
+
+  /**
    * This method returns the current menu of a canteen. This method only work for mensa academica, ahorn and vita in Aachen
    *
    * @param id    Id of a canteen supported by the OpenMensa API.
