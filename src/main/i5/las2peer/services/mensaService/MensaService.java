@@ -303,7 +303,7 @@ public class MensaService extends RESTService {
       String city = bodyJson.getAsString("city");
       JSONObject context = getContext(email, p);
       String intent = bodyJson.getAsString("intent");
-      System.out.println("Context " + context);
+      // System.out.println("Context " + context);
       event.put("email", email);
       event.put("task", "getMenu");
 
@@ -347,7 +347,8 @@ public class MensaService extends RESTService {
         city = context.getAsString("default_city");
         if (mensa == null) {
           throw new ChatException(
-            "Please specify the mensa, for which you want to get the menu."
+            "Please specify the mensa, for which you want to get the menu.\n" +
+            "You can also ask me about which mensas are available in your city"
           );
         }
       }
@@ -1495,7 +1496,7 @@ public class MensaService extends RESTService {
   private JSONObject selectMensa(ResultSet mensas, JSONObject context)
     throws ChatException, SQLException {
     JSONObject mensa = new JSONObject();
-
+    String[] selection = new String[maxEntries];
     if (!mensas.next()) throw new ChatException(
       "Sorry, I could not find a mensa with that name. 💁"
     );
@@ -1505,13 +1506,12 @@ public class MensaService extends RESTService {
     int id = mensas.getInt("id");
     String city = mensas.getString("city");
     String response = "I found the following mensas: \n1. " + first + "\n";
-
+    selection[0] = first;
     int i = 2;
 
-    String[] selection = new String[maxEntries];
     while (mensas.next() && i < maxEntries) { //at least 2 entries
       response += i + ". " + mensas.getString("name") + "\n";
-      selection[i] = mensas.getString("name");
+      selection[i - 1] = mensas.getString("name");
       i++;
     }
 
