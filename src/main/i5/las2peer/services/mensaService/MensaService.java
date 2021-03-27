@@ -291,18 +291,22 @@ public class MensaService extends RESTService {
   )
   public Response getMenu(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
+    String intent = null;
     JSONObject chatResponse = new JSONObject();
+    chatResponse.put("text", "");
+    chatResponse.put("closeContext", true);
+
     final long start = System.currentTimeMillis();
     JSONObject event = new JSONObject();
-    System.out.println("Body " + body);
+    // System.out.println("Body " + body);
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
-
       String email = bodyJson.getAsString("email");
-      String mensa = bodyJson.getAsString("mensa");
+      String mensaName = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
-      JSONObject context = getContext(email, p);
-      String intent = bodyJson.getAsString("intent");
+      intent = bodyJson.getAsString("intent");
+      JSONObject context = getContext(email);
+
       // System.out.println("Context " + context);
       event.put("email", email);
       event.put("task", "getMenu");
@@ -313,7 +317,7 @@ public class MensaService extends RESTService {
           chatResponse.put("closeContext", true);
           return Response.ok(chatResponse).build();
         case "rejection":
-          chatResponse.put("text", "Alright. 😐");
+          chatResponse.put("text", "ok.");
           chatResponse.put("closeContext", true);
           return Response.ok(chatResponse).build();
         case "confirmation":
@@ -326,14 +330,14 @@ public class MensaService extends RESTService {
 
             chatResponse.put("text", "Alright. Done! 🎉");
             chatResponse.put("closeContext", true);
-            return Response.ok().entity(chatResponse).build();
           }
+          return Response.ok().entity(chatResponse).build();
         case "number_selection":
           if (context.get("currentSelection") instanceof String[]) {
             String[] selection = (String[]) context.get("currentSelection");
             int selected = bodyJson.getAsNumber("number").intValue() - 1;
             if (selection.length > selected) {
-              mensa = selection[selected];
+              mensaName = selection[selected];
             }
             intent = context.getAsString("intent"); //get the previous intent from context
             context.remove("currentSelection");
@@ -345,7 +349,7 @@ public class MensaService extends RESTService {
       context = updateContext(bodyJson, context);
       if (city == null) {
         city = context.getAsString("default_city");
-        if (mensa == null) {
+        if (mensaName == null) {
           throw new ChatException(
             "Please specify the mensa, for which you want to get the menu.\n" +
             "You can also ask me about which mensas are available in your city"
@@ -353,8 +357,7 @@ public class MensaService extends RESTService {
         }
       }
 
-      ResultSet mensas = findMensas(mensa, city);
-
+      ResultSet mensas = findMensas(mensaName, city);
       JSONObject mensaObj = selectMensa(mensas, context);
 
       Context
@@ -364,16 +367,16 @@ public class MensaService extends RESTService {
           mensaObj.getAsString("id")
         );
 
-      String menu = createMenuChatResponse(
+      //TODO: adjust to get menu for particular day
+      String responseString = createMenuChatResponse(
         mensaObj.getAsString("name"),
         mensaObj.getAsNumber("id").intValue(),
         null
       );
-      String res = menu;
 
       city = mensaObj.getAsString("city");
       if (city != null && !city.equals(context.getAsString("default_city"))) {
-        res +=
+        responseString +=
           "\n\n Do you want to set " +
           city +
           " as your default city?\nThis helps me to find your mensa better next time 🙂";
@@ -381,8 +384,7 @@ public class MensaService extends RESTService {
         ContextInfo.put(email, context);
         chatResponse.put("closeContext", false);
       }
-      chatResponse.put("text", res);
-
+      chatResponse.put("text", responseString);
       context.put("selected_mensa", mensaObj);
       ContextInfo.put(email, context);
 
@@ -414,16 +416,13 @@ public class MensaService extends RESTService {
   @GET
   @Path("/find")
   @ApiOperation(
-    value = "Get the menu of a mensa",
-    notes = "The mensa must be supported with the Studierendenwerk in Aachen."
+    value = "Get a list of mensas supported by the service. The list is identical to the the one provided by the openmensa api. ",
+    notes = "Unlike the OpenMensa Api you can provide a city as query parameter to get all mensas in that city"
   )
   @ApiResponses(
     value = {
-      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Menu received"),
-      @ApiResponse(
-        code = HttpURLConnection.HTTP_NOT_FOUND,
-        message = "Mensa not supported"
-      ),
+      @ApiResponse(code = HttpURLConnection.HTTP_OK, message = ""),
+      @ApiResponse(code = 500, message = "SQL exception occured"),
     }
   )
   public Response getSupportedMensas(@QueryParam("city") String city) {
@@ -455,7 +454,7 @@ public class MensaService extends RESTService {
         mensas.add(mensa);
       }
       res = Response.ok(mensas).build();
-    } catch (Exception e) {
+    } catch (SQLException e) {
       e.printStackTrace();
       return Response.status(500).build();
     }
@@ -464,8 +463,7 @@ public class MensaService extends RESTService {
   }
 
   /**
-   * This method returns the current menu of a canteen. This method only work for mensa academica, ahorn and vita in Aachen
-   *
+   * This method returns the current menu of a canteen. Will currently not check if mensa is open
    * @param id    Id of a canteen supported by the OpenMensa API.
    * @param format Format in which the menu should be returned (json or html)
    * @param date Date for which the menu should be queried
@@ -549,12 +547,12 @@ public class MensaService extends RESTService {
   public Response getDishes() {
     JSONArray dishes = new JSONArray();
     JSONObject dish;
-
+    String query = "SELECT DISTINCT name,id,category FROM dishes";
+    // String query = "SELECT dishes.name,category,mensas.id  as mensaId ,mensas.name as mensaName FROM dishes JOIN mensas on dishes.mensaId=mensas.id Group by dishes.name;";
+    //TODO use second query.
     try {
       Connection con = getDatabaseConnection();
-      ResultSet res = con
-        .prepareStatement("SELECT DISTINCT name,id,category FROM dishes")
-        .executeQuery();
+      ResultSet res = con.prepareStatement(query).executeQuery();
 
       while (res.next()) {
         dish = new JSONObject();
@@ -686,7 +684,7 @@ public class MensaService extends RESTService {
         return Response.ok(chatResponse).build();
       }
 
-      context = getContext(email, p);
+      context = getContext(email);
 
       System.out.println("Context " + context);
       String lastStep = context.getAsString("intent");
@@ -833,7 +831,7 @@ public class MensaService extends RESTService {
       JSONObject json = (JSONObject) p.parse(body);
       email = json.getAsString("email");
 
-      context = getContext(email, p);
+      context = getContext(email);
       context = updateContext(json, context);
 
       event.put("email", email);
@@ -1123,11 +1121,13 @@ public class MensaService extends RESTService {
   /**Gets the menu for the mensa and formats it as a string which can be presented in chat
    * @param name The name of the mensa
    * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
+   * @param date The date for which the menu should be returned
    */
   private String createMenuChatResponse(String name, int id, String date)
     throws SQLException, ChatException {
     String MESSAGE_HEAD = "";
-    String weekday = new SimpleDateFormat("EEEE").format(new Date());
+    String weekday = new SimpleDateFormat("EEEE").format(new Date()); //gets the weekday of the current day
+    //TODO: make a check to see if the mensa is closed on the desired day by making a call to the openmensa api. Check if it is on a weekend. Then if it is select monday and check again
 
     if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
       MESSAGE_HEAD +=
@@ -1217,7 +1217,7 @@ public class MensaService extends RESTService {
     JSONArray menu = new JSONArray();
     boolean closed = true; // if all dishes in the returned menu have the name closed then the mensa is closed
 
-    if (date == null || "".equals(date)) { //if date is not provided get current date or mondy if current day is weekend
+    if (date == null || "".equals(date)) { //if date is not provided get current date or monday if current day is weekend
       if (weekday == 1) { // Sunday
         Date monday = new Date(new Date().getTime() + ONE_DAY_IN_MS);
         date = dateFormat.format(monday);
@@ -1284,7 +1284,11 @@ public class MensaService extends RESTService {
       int dishId = menuItem.getAsNumber("id").intValue();
       float avg = getAverageRating(dishId);
 
-      if (!"geschlossen".equals(dish) && !"closed".equals(dish)) {
+      if (
+        !"geschlossen".equals(dish) &&
+        !"closed".equals(dish) &&
+        !dish.contains("Boisson")
+      ) {
         if (type.equals("Tellergericht") || type.contains("Entrée")) {
           returnString += "🍽 " + type + ": " + dish + "\n";
         } else if (type.equals("Vegetarisch") || type.contains("Végétarien")) {
@@ -1325,7 +1329,7 @@ public class MensaService extends RESTService {
   }
 
   /**Saves the dishes for a  menu from a given mensa in the datbase
-   * @param menu the menu of dishes that should be saver
+   * @param menu the menu of dishes that should be saved
    */
   private void saveDishesToIndex(JSONArray menu, int mensaId) {
     Date lastUpdate = lastDishUpdate.get((Integer) mensaId);
@@ -1336,7 +1340,7 @@ public class MensaService extends RESTService {
     ) {
       return;
     }
-    System.out.println("Saving dishes to index...");
+    System.out.println("Updating dishes...");
     Context
       .get()
       .monitorEvent(
@@ -1466,6 +1470,9 @@ public class MensaService extends RESTService {
    */
   private int addDishEntry(JSONObject obj, Connection con, int mensaId)
     throws SQLException {
+    if (obj.getAsString("name").contains("Boisson")) {
+      return 0; //Luxemburgish canteens add drinks to the menu. Dont save those in dishes
+    }
     PreparedStatement statement = con.prepareStatement(
       "INSERT IGNORE INTO dishes VALUES  (?,?,?,?)"
     );
@@ -1496,11 +1503,11 @@ public class MensaService extends RESTService {
   private JSONObject selectMensa(ResultSet mensas, JSONObject context)
     throws ChatException, SQLException {
     JSONObject mensa = new JSONObject();
-    String[] selection = new String[maxEntries];
+
     if (!mensas.next()) throw new ChatException(
       "Sorry, I could not find a mensa with that name. 💁"
     );
-
+    String[] selection = new String[maxEntries];
     String first = mensas.getString("name"); // first entry
 
     int id = mensas.getInt("id");
@@ -1523,9 +1530,12 @@ public class MensaService extends RESTService {
     } else if (i == maxEntries) {
       mensas.last();
       int total = mensas.getRow();
-      response += "and " + (total - maxEntries) + " more...\n";
-      response +=
-        "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
+      System.out.println("Found a total of " + total + " matching mensas");
+      if (total > maxEntries) {
+        response += "and " + (total - maxEntries) + " more...\n";
+        response +=
+          "Specify the name of your mensa more clearly, if your mensa is not on the list\n";
+      }
     }
     if (i != 2) {
       //save selection in context
@@ -1571,8 +1581,7 @@ public class MensaService extends RESTService {
   //   return new JSONObject();
   // }
 
-  private JSONObject getContext(String email, JSONParser p)
-    throws ParseException {
+  private JSONObject getContext(String email) throws ParseException {
     Object obj = ContextInfo.get(email);
 
     if (obj instanceof JSONObject) {
