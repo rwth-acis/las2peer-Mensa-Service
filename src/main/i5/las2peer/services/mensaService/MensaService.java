@@ -2,6 +2,7 @@ package i5.las2peer.services.mensaService;
 
 import i5.las2peer.api.Context;
 import i5.las2peer.api.ManualDeployment;
+import i5.las2peer.api.ServiceException;
 import i5.las2peer.api.logging.MonitoringEvent;
 import i5.las2peer.api.persistency.Envelope;
 import i5.las2peer.api.persistency.EnvelopeAccessDeniedException;
@@ -1060,7 +1061,7 @@ public class MensaService extends RESTService {
       Connection con = getDatabaseConnection();
       PreparedStatement statement = con.prepareStatement(
         "SELECT * from pictures"
-      ); //TODO
+      ); //TODO maybe we should use the file service to add pictures
       con.close();
     } catch (Exception e) {
       Context
@@ -1375,10 +1376,12 @@ public class MensaService extends RESTService {
     }
   }
 
-  /** Updates the mensas in the database*/
+  /**
+   * updates the mensas in the database
+   * only update the mensas once a month. Mensas do not change that often as
+   * mentioned on https://doc.openmensa.org/api/v2/canteens/
+   */
   protected void fetchMensas() {
-    // only update the mensas once a month. Mensas do not change that often as
-    // mentioned on https://doc.openmensa.org/api/v2/canteens/
     if (
       lastMensasUpdate != null &&
       (
