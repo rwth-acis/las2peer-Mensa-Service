@@ -1641,10 +1641,14 @@ public class MensaService extends RESTService {
       OPEN_MENSA_API_ENDPOINT + "/canteens/" + mensaID + "/days/" + date;
 
     URL url = new URL(urlString);
-    URLConnection con = url.openConnection();
-    con.addRequestProperty("Content-type", "application/json");
-    JSONObject response = (JSONObject) jsonParser.parse(con.getInputStream());
-    return !(Boolean) response.get("closed");
+    try {
+      URLConnection con = url.openConnection();
+      con.addRequestProperty("Content-type", "application/json");
+      JSONObject response = (JSONObject) jsonParser.parse(con.getInputStream());
+      return !(Boolean) response.get("closed");
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   // hard coded IDs of mensas in Aachen
