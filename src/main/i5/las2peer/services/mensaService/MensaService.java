@@ -1272,7 +1272,7 @@ public class MensaService extends RESTService {
           MonitoringEvent.SERVICE_CUSTOM_ERROR_2,
           String.valueOf(mensaID)
         );
-      throw new IOException("Mensa probably closed");
+      throw new IOException("Error fetching the menu");
     }
   }
 
