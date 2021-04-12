@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.sql.Connection;
@@ -157,12 +158,12 @@ public class MensaService extends RESTService {
 
     try {
       Connection con = database.getDataSource().getConnection();
-
       con.close();
+      fetchMensas();
     } catch (SQLException e) {
-      Context
-        .get()
-        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_4, e.getMessage());
+      // Context
+      //   .get()
+      //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_4, e.getMessage()); //this will throw an IllegalStateException
       e.printStackTrace();
       System.out.println("Failed to connect to Database: " + e.getMessage());
     }
@@ -1234,6 +1235,10 @@ public class MensaService extends RESTService {
     // urlString += mensaID + "/days/" + "2020-11-30" + "/meals";
 
     try {
+      if (!MensaIsOpen(mensaID, date)) {
+        throw new IOException("canteen is closed on " + date);
+      }
+
       URL url = new URL(urlString);
       URLConnection con = url.openConnection();
       con.addRequestProperty("Content-type", "application/json");
@@ -1267,7 +1272,7 @@ public class MensaService extends RESTService {
           MonitoringEvent.SERVICE_CUSTOM_ERROR_2,
           String.valueOf(mensaID)
         );
-      throw new IOException("Mensa closed");
+      throw new IOException("Mensa probably closed");
     }
   }
 
@@ -1402,7 +1407,7 @@ public class MensaService extends RESTService {
     Integer totalPages = 0;
 
     try {
-      dbConnection = getDatabaseConnection();
+      dbConnection = database.getDataSource().getConnection();
       URL url = new URL(urlString);
       URLConnection con = url.openConnection();
       InputStream in = con.getInputStream();
@@ -1489,7 +1494,9 @@ public class MensaService extends RESTService {
     return updated;
   }
 
-  /** Returns a connection to the database */
+  /** Returns a connection to the database. Do not use this function outside a service request contextz
+   * like in the constructor of the service, because Contex.get() will throw an IllegalStateException
+   */
   private Connection getDatabaseConnection() throws SQLException {
     MensaService service = (MensaService) Context.get().getService();
 
@@ -1621,6 +1628,23 @@ public class MensaService extends RESTService {
     }
 
     throw new ChatException("Could not find a dish for " + keyword + "💁\n ");
+  }
+
+  private boolean MensaIsOpen(int mensaID, String date)
+    throws MalformedURLException, IOException, ParseException {
+    JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
+    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+    if (date == null) {
+      date = dateFormat.format(new Date());
+    }
+    String urlString =
+      OPEN_MENSA_API_ENDPOINT + "/canteens/" + mensaID + "/days/" + date;
+
+    URL url = new URL(urlString);
+    URLConnection con = url.openConnection();
+    con.addRequestProperty("Content-type", "application/json");
+    JSONObject response = (JSONObject) jsonParser.parse(con.getInputStream());
+    return !(Boolean) response.get("closed");
   }
 
   // hard coded IDs of mensas in Aachen
