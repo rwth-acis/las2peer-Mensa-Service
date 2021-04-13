@@ -1534,12 +1534,32 @@ public class MensaService extends RESTService {
 
     int id = mensas.getInt("id");
     String city = mensas.getString("city");
-    String response = "I found the following mensas: \n1. " + first + "\n";
+    String response = "I found the following mensas: \n";
+    try {
+      if (MensaIsOpen(id, null)) {
+        response += "1. " + first + "\n";
+      } else {
+        response += "1. " + first + " (closed)\n";
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      response += "1. " + first + "\n";
+    }
+
     selection[0] = first;
     int i = 2;
 
     while (mensas.next() && i < maxEntries) { //at least 2 entries
-      response += i + ". " + mensas.getString("name") + "\n";
+      try {
+        if (MensaIsOpen(mensas.getInt("id"), null)) {
+          response += i + ". " + mensas.getString("name") + "\n";
+        } else {
+          response += i + ". " + mensas.getString("name") + " (closed)\n";
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+        response += i + ". " + mensas.getString("name") + "\n";
+      }
       selection[i - 1] = mensas.getString("name");
       i++;
     }
@@ -1643,7 +1663,7 @@ public class MensaService extends RESTService {
   }
 
   private boolean MensaIsOpen(int mensaID, String date)
-    throws MalformedURLException, IOException, ParseException {
+    throws MalformedURLException, ParseException {
     JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     if (date == null) {
