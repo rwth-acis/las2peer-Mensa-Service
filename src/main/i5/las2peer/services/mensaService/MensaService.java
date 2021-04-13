@@ -62,7 +62,6 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
-import org.web3j.tuples.Tuple;
 
 /**
  * las2peer-Mensa-Service
@@ -1133,7 +1132,7 @@ public class MensaService extends RESTService {
 
     if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
       MESSAGE_HEAD +=
-        "Please note that the mensa is closed on week-ends. This is the menu for Monday\n";
+        "Please note that canteens are closed on week-ends. This is the menu for Monday\n";
       weekday = "Monday";
     }
     MESSAGE_HEAD +=
@@ -1144,13 +1143,19 @@ public class MensaService extends RESTService {
       String returnString = convertToHtml(mensaMenu);
       return MESSAGE_HEAD + returnString;
     } catch (IOException e) {
-      throw new ChatException(
-        "Could not get the menu for mensa " +
-        name +
-        ".\n The mensa is probably closed on " +
-        weekday +
-        ", or no menu has been published yet 😔"
-      );
+      if ("closed".equals(e.getMessage())) {
+        throw new ChatException(
+          "Unfortunately, " + name + " is closed on " + weekday + " 😔"
+        );
+      } else {
+        throw new ChatException(
+          "The menu for " +
+          name +
+          " on " +
+          weekday +
+          " has not been published yet 😔"
+        );
+      }
     }
   }
 
@@ -1207,8 +1212,8 @@ public class MensaService extends RESTService {
    * Gets the menu for a given mensa
    * @param mensaID id of the mensa in the OpenMensa API
    * @param date Date for which the menu should be queried, needs to be in "yyyy-MM-dd" Date format
-   * @return the menu of the mensa for that day, or Monday if the given day is on a weekend
-   * @throws IOException if the menu could not be fetched from the openmensa api
+   * @return the menu of the mensa for that date. If no date is given, the current day is used. If the given day is on a weekend, the menu for the following monday is returned.
+   * @throws IOException The canteen is closed on the given day or the menu could not be fetched from the openmensa api. If the canteen is closed, the exception message will be "closed"
    */
   public JSONArray getMensaMenu(int mensaID, String date) throws IOException {
     JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
@@ -1236,7 +1241,7 @@ public class MensaService extends RESTService {
 
     try {
       if (!MensaIsOpen(mensaID, date)) {
-        throw new IOException("canteen is closed on " + date);
+        throw new IOException("closed");
       }
 
       URL url = new URL(urlString);
@@ -1252,7 +1257,7 @@ public class MensaService extends RESTService {
         }
       }
       if (closed) {
-        throw new IOException("Mensa closed");
+        throw new IOException("closed");
       }
       Context
         .get()
@@ -1272,7 +1277,7 @@ public class MensaService extends RESTService {
           MonitoringEvent.SERVICE_CUSTOM_ERROR_2,
           String.valueOf(mensaID)
         );
-      throw new IOException("Error fetching the menu");
+      throw e;
     }
   }
 
