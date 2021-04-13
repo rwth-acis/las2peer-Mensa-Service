@@ -368,25 +368,26 @@ public class MensaService extends RESTService {
           mensaObj.getAsString("id")
         );
 
-      //TODO: adjust to get menu for particular day
+      //TODO: adjust the funftion to get menu for particular day
       String responseString = createMenuChatResponse(
         mensaObj.getAsString("name"),
         mensaObj.getAsNumber("id").intValue(),
-        null
+        null //date
       );
 
       city = mensaObj.getAsString("city");
       if (city != null && !city.equals(context.getAsString("default_city"))) {
+        //ask to set default city when fetching menu for new city
         responseString +=
           "\n\n Do you want to set " +
           city +
           " as your default city?\nThis helps me to find your mensa better next time 🙂";
         context.put("selected_city", city);
         ContextInfo.put(email, context);
-        chatResponse.put("closeContext", false);
+        chatResponse.put("closeContext", false); // We expect the user to answer to the question.
       }
       chatResponse.put("text", responseString);
-      context.put("selected_mensa", mensaObj);
+      context.put("selected_mensa", mensaObj); //save the selected mensa in context. If user will add a review, this one will be selected if no canteen is provided
       ContextInfo.put(email, context);
 
       event.put("time", System.currentTimeMillis() - start);
@@ -396,17 +397,17 @@ public class MensaService extends RESTService {
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
           event.toString()
         );
-
-      return Response.ok().entity(chatResponse).build();
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
       chatResponse.put("closeContext", false);
-      return Response.ok().entity(chatResponse).build();
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
-      return Response.ok(chatResponse).build();
     }
+    return Response.ok().entity(chatResponse).build();
+    /* note that exceptions are sent with status ok we might need to reflect the exception in the status code.
+     *I have not tested how the social bot manager handles those though
+     */
   }
 
   /**
@@ -520,6 +521,12 @@ public class MensaService extends RESTService {
         .entity(returnString)
         .build();
     } catch (IOException e) {
+      if ("closed".equals(e.getMessage())) {
+        return Response
+          .status(Status.NOT_FOUND)
+          .entity("The canteen is closed on this day")
+          .build();
+      }
       return Response
         .status(Status.NOT_FOUND)
         .entity("Could not get the menu for mensa with id:" + id)
