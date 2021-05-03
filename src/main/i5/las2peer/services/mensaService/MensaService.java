@@ -411,7 +411,7 @@ public class MensaService extends RESTService {
         );
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
-      chatResponse.put("closeContext", false);
+      chatResponse.put("closeContext", e.closeContext);
     } catch (Exception e) {
       e.printStackTrace();
       chatResponse.appendField("text", "Sorry, a problem occured 🙁");
@@ -807,7 +807,7 @@ public class MensaService extends RESTService {
       }
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
-      chatResponse.put("closeContext", false);
+      chatResponse.put("closeContext", e.closeContext);
     } catch (NumberFormatException e) {
       chatResponse.appendField(
         "text",
@@ -1187,11 +1187,12 @@ public class MensaService extends RESTService {
     Connection dbConnection = null;
     PreparedStatement statement = null;
     ResultSet res;
+
     try {
       dbConnection = getDatabaseConnection();
       statement =
         dbConnection.prepareStatement("SELECT * FROM mensas WHERE name LIKE ?");
-      statement.setString(1, "%" + mensaName + "%");
+      statement.setString(1, "%" + mensaName.trim() + "%");
       res = statement.executeQuery();
       return res;
     } catch (Exception e) {
@@ -1201,6 +1202,8 @@ public class MensaService extends RESTService {
   }
 
   private ResultSet findMensas(String mensaName, String city) {
+    // System.out.println("mensa name " + mensaName);
+    // System.out.println("city " + city);
     if (city == null) return findMensas(mensaName);
     Connection dbConnection = null;
     PreparedStatement statement = null;
@@ -1214,9 +1217,9 @@ public class MensaService extends RESTService {
     try {
       dbConnection = getDatabaseConnection();
       statement = dbConnection.prepareStatement(query);
-      statement.setString(1, "%" + city + "%");
+      statement.setString(1, "%" + city.trim() + "%");
       if (mensaName != null) {
-        statement.setString(2, "%" + mensaName + "%");
+        statement.setString(2, "%" + mensaName.trim() + "%");
       }
 
       res = statement.executeQuery();
@@ -1597,7 +1600,7 @@ public class MensaService extends RESTService {
       ContextInfo.put(context.getAsString("email"), context);
     }
     response += "Please specify your mensa.";
-    throw new ChatException(response);
+    throw new ChatException(response, false);
   }
 
   /**
@@ -1615,6 +1618,20 @@ public class MensaService extends RESTService {
     }
 
     return context;
+  }
+
+  /**
+   * Function to determine if input is an actual canteen name. We assume that every canteen contains either mensa restaurant or cafe
+   * @param name name to check
+   * @return true if it is considered the name of a canteen
+   */
+  private boolean isMensa(String name) {
+    if (name == null) return false;
+    return (
+      name.toLowerCase().contains("mensa") ||
+      name.toLowerCase().contains("restaurant") ||
+      name.toLowerCase().contains("cafe")
+    );
   }
 
   // private JSONObject getContext(String email, JSONParser p)
@@ -1717,9 +1734,19 @@ public class MensaService extends RESTService {
      *
      */
     private static final long serialVersionUID = 1L;
+    boolean closeContext;
 
     protected ChatException(String message) {
       super(message);
+      Context
+        .get()
+        .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_3, message);
+      this.closeContext = true;
+    }
+
+    protected ChatException(String message, boolean closeContext) {
+      super(message);
+      this.closeContext = closeContext;
       Context
         .get()
         .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_3, message);
