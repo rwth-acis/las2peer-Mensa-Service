@@ -334,6 +334,9 @@ public class MensaService extends RESTService {
           }
           return Response.ok().entity(chatResponse).build();
         case "number_selection":
+          System.out.println(
+            "User selected " + bodyJson.getAsNumber("number") + "from a list"
+          );
           if (context.get("currentSelection") instanceof String[]) {
             String[] selection = (String[]) context.get("currentSelection");
             int selected = bodyJson.getAsNumber("number").intValue() - 1;
@@ -344,18 +347,27 @@ public class MensaService extends RESTService {
             context.remove("currentSelection");
             ContextInfo.put(email, context);
           }
+          System.out.println("Mensaname is now " + mensaName);
+          break;
+        case "menu":
+          if (
+            mensaName == null && "menu".equals(context.getAsString("intent"))
+          ) { //last intent was also menu so we assume that the user now specifies the mensaName
+            mensaName = bodyJson.getAsString("msg");
+          }
           break;
       }
 
       context = updateContext(bodyJson, context);
+
       if (city == null) {
         city = context.getAsString("default_city");
-        if (mensaName == null) {
-          throw new ChatException(
-            "Please specify the mensa, for which you want to get the menu.\n" +
-            "You can also ask me about which mensas are available in your city"
-          );
-        }
+      }
+      if (mensaName == null && city == null) {
+        throw new ChatException(
+          "Please specify the mensa, for which you want to get the menu.\n" +
+          "You can also ask me about which mensas are available in your city"
+        );
       }
 
       ResultSet mensas = findMensas(mensaName, city);
