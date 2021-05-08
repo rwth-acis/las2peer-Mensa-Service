@@ -6,7 +6,7 @@ set -e
 if [[ ! -z "${DEBUG}" ]]; then
     set -x
 fi
-
+NODE_ID_SEED=${NODE_ID_SEED:-$RANDOM}
 # set some helpful variables
 export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.mensaService.MensaService.properties'
 export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' etc/ant_configuration/service.properties)
@@ -68,7 +68,7 @@ echo external_address = $(curl -s https://ipinfo.io/ip):${LAS2PEER_PORT} > etc/p
 # # start the service within a las2peer node
 # if [[ -z "${@}" ]]
 # then
-  exec ${LAUNCH_COMMAND} --observer startService\("'""${SERVICE}""'", "'"mensa"'"\) 
+  exec ${LAUNCH_COMMAND} --node-id-seed $NODE_ID_SEED --observer startService\("'""${SERVICE}""'", "'"mensa"'"\) 
 # else
 #   exec ${LAUNCH_COMMAND} ${@}
 # fi
