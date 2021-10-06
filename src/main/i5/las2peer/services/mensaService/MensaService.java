@@ -359,9 +359,9 @@ public class MensaService extends RESTService {
 
       context = updateContext(bodyJson, context);
 
-      if (city == null) {
+      if (mensaName == null && city == null) {
         city = context.getAsString("default_city");
-        if (mensaName == null && city == null) {
+        if (city == null) {
           throw new ChatException("Please specify the mensa, for which you want to get the menu.\n"
               + "You can also ask me about which mensas are available in your city");
         }
