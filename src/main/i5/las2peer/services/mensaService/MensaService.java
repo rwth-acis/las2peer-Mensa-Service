@@ -446,10 +446,11 @@ public class MensaService extends RESTService {
     JSONArray mensas = new JSONArray();
     ResultSet rs;
     String query;
+
     if (city != null) {
-      query = "SELECT * FROM mensas WHERE name LIKE ?";
+      query = "SELECT * FROM mensas WHERE city LIKE ?";
     } else {
-      query = "SELECT * FROM mensas ";
+      query = "SELECT * FROM mensas";
     }
     try {
       dbConnection = getDatabaseConnection();
