@@ -1,0 +1,54 @@
+<SuccessModel name="Mensa Service Evaluation" service="i5.las2peer.services.mensaService.MensaService@1.0.0">
+
+    <dimension name="System Quality">
+        <factor name="Service Responsiveness">
+            <measure name="Avergae time to process a request"/>
+            <measure name="Avergae process time per uri"/>
+        </factor>
+
+        <factor name="Error Rate">
+            <measure name="Successful Service Requests Ratio"/>
+            <measure name="Number of unhandled exceptions"/>
+        </factor>
+    </dimension>
+
+    <dimension name="Information Quality">
+        <factor name="Reliability">
+            <measure name="Number of unsuccessfull menu retrievals"/>
+        </factor>
+        <factor name="Accuracy">
+            <measure name="todo: "/>
+        </factor>
+        <factor name="Relevance">
+            <measure name="todo: "/>
+        </factor>
+    </dimension>
+
+    <dimension name="Use">
+        <factor name="Frequency of use">
+            <measure name="Time spent on chat interactions per week (per user)" />
+        </factor>
+    </dimension>
+
+    <dimension name="User Satisfaction">
+        <factor name="No Factors or Measures yet">
+        </factor>
+    </dimension>
+
+    <dimension name="Individual Impact">
+        <factor name="Time to submit a task">
+            <measure name="Average time to submit a review" />
+        </factor>
+        <factor name="Time savings">
+            <measure name="TODO" />
+        </factor>
+    </dimension>
+
+    <dimension name="Community Impact">
+        <factor name="Interface use">
+            <measure name="Ratio of chat requests" />
+            <measure name="Ratio of community application requests" />
+        </factor>
+    </dimension>
+
+</SuccessModel>
