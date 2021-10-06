@@ -292,30 +292,30 @@ public class MensaService extends RESTService {
   )
   public Response getMenu(String body) {
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
-    String intent = null;
     JSONObject chatResponse = new JSONObject();
+
     chatResponse.put("text", "");
     chatResponse.put("closeContext", true);
 
     final long start = System.currentTimeMillis();
     JSONObject event = new JSONObject();
-    // System.out.println("Body " + body);
+
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
       String email = bodyJson.getAsString("email");
       String mensaName = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
-      intent = bodyJson.getAsString("intent");
+      String intent = bodyJson.getAsString("intent");
+
       JSONObject context = getContext(email);
 
-      // System.out.println("Context " + context);
       event.put("email", email);
       event.put("task", "getMenu");
 
       switch (intent) {
         case "quit":
+          ContextInfo.remove(email);
           chatResponse.put("text", "Alright. 🙃");
-          chatResponse.put("closeContext", true);
           return Response.ok(chatResponse).build();
         case "rejection":
           chatResponse.put("text", "ok.");
