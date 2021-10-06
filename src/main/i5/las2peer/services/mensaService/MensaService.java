@@ -319,7 +319,6 @@ public class MensaService extends RESTService {
           return Response.ok(chatResponse).build();
         case "rejection":
           chatResponse.put("text", "ok.");
-          chatResponse.put("closeContext", true);
           return Response.ok(chatResponse).build();
         case "confirmation":
           if (context.getAsString("selected_city") != null) {
@@ -362,12 +361,10 @@ public class MensaService extends RESTService {
 
       if (city == null) {
         city = context.getAsString("default_city");
-      }
-      if (mensaName == null && city == null) {
-        throw new ChatException(
-          "Please specify the mensa, for which you want to get the menu.\n" +
-          "You can also ask me about which mensas are available in your city"
-        );
+        if (mensaName == null && city == null) {
+          throw new ChatException("Please specify the mensa, for which you want to get the menu.\n"
+              + "You can also ask me about which mensas are available in your city");
+        }
       }
 
       ResultSet mensas = findMensas(mensaName, city);
@@ -1203,8 +1200,6 @@ public class MensaService extends RESTService {
   }
 
   private ResultSet findMensas(String mensaName, String city) {
-    // System.out.println("mensa name " + mensaName);
-    // System.out.println("city " + city);
     if (city == null) return findMensas(mensaName);
     Connection dbConnection = null;
     PreparedStatement statement = null;
