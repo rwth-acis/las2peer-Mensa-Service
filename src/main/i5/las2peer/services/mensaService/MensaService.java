@@ -1542,7 +1542,8 @@ public class MensaService extends RESTService {
     throws ChatException, SQLException {
     JSONObject mensa = new JSONObject();
 
-    if (!mensas.next()) throw new ChatException(
+    if (mensas == null || !mensas.next())
+      throw new ChatException(
       "Sorry, I could not find a mensa with that name. 💁"
     );
     String[] selection = new String[maxEntries];
