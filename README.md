@@ -19,6 +19,19 @@ First configure the `\etc\i5.las2peer.services.mensaService.MensaService.propert
 
 Make sure you run the sql script `src\main\i5\las2peer\services\mensaService\database\initDB.sql` on your database. This script initializes the tables needed by the MensaService.
 
+### First time building
+
+If you are building the serrive for the first time, you need to set up a MySQL database. On this database you need to run the `etc\databaseInit.sql` script. 
+Adjust the properties file `etc\i5.las2peer.services.mensaService.MensaService.properties`
+|variable | default |
+|---|---|
+|databaseUser | root |  
+|databasePassword | root-password |  
+|databaseName | LAS2PEERMON |
+|databaseHost | 127.0.0.1 |
+|databasePort | 3306|
+
+with the credentials to your database
 ## Build
 
 Execute the following command on your shell:
