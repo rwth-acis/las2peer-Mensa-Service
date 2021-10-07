@@ -1,5 +1,25 @@
 package i5.las2peer.services.mensaService;
 
+import i5.las2peer.api.Context;
+import i5.las2peer.api.ManualDeployment;
+import i5.las2peer.api.logging.MonitoringEvent;
+import i5.las2peer.api.persistency.Envelope;
+import i5.las2peer.api.persistency.EnvelopeAccessDeniedException;
+import i5.las2peer.api.persistency.EnvelopeNotFoundException;
+import i5.las2peer.api.persistency.EnvelopeOperationFailedException;
+import i5.las2peer.api.security.UserAgent;
+import i5.las2peer.restMapper.RESTService;
+import i5.las2peer.restMapper.annotations.ServicePath;
+import i5.las2peer.services.mensaService.database.SQLDatabase;
+import i5.las2peer.services.mensaService.database.SQLDatabaseType;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Contact;
+import io.swagger.annotations.Info;
+import io.swagger.annotations.License;
+import io.swagger.annotations.SwaggerDefinition;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -21,7 +41,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -36,27 +55,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-
-import i5.las2peer.api.Context;
-import i5.las2peer.api.ManualDeployment;
-import i5.las2peer.api.logging.MonitoringEvent;
-import i5.las2peer.api.persistency.Envelope;
-import i5.las2peer.api.persistency.EnvelopeAccessDeniedException;
-import i5.las2peer.api.persistency.EnvelopeNotFoundException;
-import i5.las2peer.api.persistency.EnvelopeOperationFailedException;
-import i5.las2peer.api.security.UserAgent;
-import i5.las2peer.restMapper.RESTService;
-import i5.las2peer.restMapper.annotations.ServicePath;
-import i5.las2peer.services.mensaService.database.SQLDatabase;
-import i5.las2peer.services.mensaService.database.SQLDatabaseType;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Contact;
-import io.swagger.annotations.Info;
-import io.swagger.annotations.License;
-import io.swagger.annotations.SwaggerDefinition;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -583,7 +581,14 @@ public class MensaService extends RESTService {
    * Retrieve all ratings for a dish.
    *
    * @param id id of the dish.
-   * @return JSON encoded list of ratings.
+   * @return JSON encoded list of ratings. rating: 
+   *    {"author": <author of review>
+        "stars":<stars given by the author between 1 and 5 stars>;
+        "comment": <optional comment>
+        "timestamp": <timestamp of record>
+        "category": <category of dish (klassiker, Vegetarisch,...)>
+        "mensaName":<name of the canteen at which the food was consumed>
+        "city": <city in which the canteen is located>}
    */
   @GET
   @Path("/dishes/{id}/ratings")
@@ -598,28 +603,7 @@ public class MensaService extends RESTService {
       );
 
     try { //get Ratings from distributed storage
-      JSONArray reviews = new JSONArray();
-      JSONObject review;
-      Connection con = getDatabaseConnection();
-      PreparedStatement s = con.prepareStatement(
-        "SELECT * FROM reviews LEFT JOIN (dishes,mensas) ON (reviews.dishid =dishes.id AND mensas.id=reviews.mensaId) WHERE dishes.id=?"
-      );
-      s.setInt(1, id);
-      ResultSet res = s.executeQuery();
-      while (res.next()) {
-        review = new JSONObject();
-        review.put("id", res.getInt("reviews.id"));
-        review.put("mensa", res.getString("mensas.name"));
-        review.put("stars", res.getInt("stars"));
-        review.put("comment", res.getString("comment"));
-        review.put("author", res.getString("author"));
-        review.put("timestamp", res.getDate("timestamp").toString());
-        reviews.add(review);
-      }
-
-      con.close();
-
-      return Response.ok().entity(reviews).build();
+      return Response.ok().entity(getRatingsForDish(id)).build();
     } catch (Exception e) {
       e.printStackTrace();
       Context
@@ -1140,7 +1124,9 @@ public class MensaService extends RESTService {
         int daysDifference =
           LocalDate.parse(day).getDayOfWeek().getValue() - today; // difference in days between today and provided date
         date = new Date(new Date().getTime() + daysDifference * ONE_DAY_IN_MS); // get the date of the weekday provided by user
-        System.out.println("Calculated day: "+ weekday+ " user provided day: "+ day);
+        System.out.println(
+          "Calculated day: " + weekday + " user provided day: " + day
+        );
         weekday = day;
       }
     }
@@ -1155,9 +1141,12 @@ public class MensaService extends RESTService {
     }
     MESSAGE_HEAD +=
       "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
-    
+
     try {
-      JSONArray mensaMenu = getMensaMenu(id,new SimpleDateFormat("yyyy-MM-dd").format(date));
+      JSONArray mensaMenu = getMensaMenu(
+        id,
+        new SimpleDateFormat("yyyy-MM-dd").format(date)
+      );
       String returnString = convertToHtml(mensaMenu);
       return MESSAGE_HEAD + returnString;
     } catch (IOException e) {
@@ -1802,14 +1791,14 @@ public class MensaService extends RESTService {
     }
   }
 
-  private JSONArray getRatingsForDish(String dishName) {
+  private JSONArray getRatingsForDish(int id) {
     JSONArray result = new JSONArray();
     try {
       Connection con = getDatabaseConnection();
       PreparedStatement s = con.prepareStatement(
-        "SELECT author, stars, comment, timestamp , category, mensas.name, mensas.city FROM reviews JOIN mensas ON mensas.id=reviews.mensaId JOIN dishes ON dishes.id=reviews.dishId WHERE reviews.name=?"
+        "SELECT author, stars, comment, timestamp , category, mensas.name, mensas.city FROM reviews JOIN mensas ON mensas.id=reviews.mensaId JOIN dishes ON dishes.id=reviews.dishId WHERE dishes.id=?"
       );
-      s.setString(1, dishName);
+      s.setInt(1, id);
       ResultSet res = s.executeQuery();
       while (res.next()) {
         JSONObject rating = new JSONObject();
@@ -1829,30 +1818,6 @@ public class MensaService extends RESTService {
       e.printStackTrace();
       return null;
     }
-  }
-
-  /**
-   * Retrieve all ratings for a dish.
-   *
-   * @param dish Name of the dish.
-   * @return JSON encoded list of ratings.
-   */
-  @GET
-  @Path("/dishes/{dish}/ratings")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.TEXT_PLAIN)
-  public Response getRatings(@PathParam("dish") String dish)
-    throws EnvelopeOperationFailedException {
-    final long responseStart = System.currentTimeMillis();
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
-    JSONArray ratings = getRatingsForDish(dish);
-    Context
-      .get()
-      .monitorEvent(
-        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-        String.valueOf(System.currentTimeMillis() - responseStart)
-      );
-    return Response.ok().entity(ratings).build();
   }
 
   /**
