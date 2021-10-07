@@ -35,6 +35,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -284,6 +286,7 @@ public class MensaService extends RESTService {
       String mensaName = bodyJson.getAsString("mensa");
       String city = bodyJson.getAsString("city");
       String intent = bodyJson.getAsString("intent");
+      String day = bodyJson.getAsString("day");
 
       JSONObject context = getContext(email);
 
@@ -1124,22 +1127,40 @@ public class MensaService extends RESTService {
    * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
    * @param date The date for which the menu should be returned
    */
-  private String createMenuChatResponse(String name, int id, String date)
+  private String createMenuChatResponse(String name, int id, String day)
     throws SQLException, ChatException {
     String MESSAGE_HEAD = "";
-    String weekday = new SimpleDateFormat("EEEE").format(new Date()); //gets the weekday of the current day
-    //TODO: make a check to see if the mensa is closed on the desired day by making a call to the openmensa api. Check if it is on a weekend. Then if it is select monday and check again
+    String weekday = new SimpleDateFormat("EEEE").format(new Date()); //e.g. Sunday
+    Date date = new Date();
 
-    if ("Sunday".equals(weekday) || "Saturday".equals(weekday)) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
+    if (day != null) {
+      if ("tomorrow".equals(day)) {
+        date = new Date(new Date().getTime() + ONE_DAY_IN_MS); // set date to tomorrow
+        weekday = new SimpleDateFormat("EEEE").format(date);
+      } else if (!"today".equals(day)) {
+        // case if day in  Monday to Sunday
+        int today = LocalDate.now().getDayOfWeek().getValue();
+        int daysDifference =
+          LocalDate.parse(day).getDayOfWeek().getValue() - today; // difference in days between today and provided date
+        date = new Date(new Date().getTime() + daysDifference * ONE_DAY_IN_MS); // get the date of the weekday provided by user
+        System.out.println("Calculated day: "+ weekday+ " user provided day: "+ day);
+        weekday = day;
+      }
+    }
+
+    if (
+      "sunday".equals(weekday.toLowerCase()) ||
+      "saturday".equals(weekday.toLowerCase())
+    ) { //If weekend we try to fetch the menu for following monday (mensas are typically closed on weekends)
       MESSAGE_HEAD +=
         "Please note that canteens are closed on week-ends. This is the menu for Monday\n";
       weekday = "Monday";
     }
     MESSAGE_HEAD +=
       "Here is the menu for mensa " + name + " on " + weekday + " : \n \n";
-
+    
     try {
-      JSONArray mensaMenu = getMensaMenu(id, date);
+      JSONArray mensaMenu = getMensaMenu(id,new SimpleDateFormat("yyyy-MM-dd").format(date));
       String returnString = convertToHtml(mensaMenu);
       return MESSAGE_HEAD + returnString;
     } catch (IOException e) {
@@ -1520,8 +1541,7 @@ public class MensaService extends RESTService {
     throws ChatException, SQLException {
     JSONObject mensa = new JSONObject();
 
-    if (mensas == null || !mensas.next())
-      throw new ChatException(
+    if (mensas == null || !mensas.next()) throw new ChatException(
       "Sorry, I could not find a mensa with that name. 💁"
     );
     String[] selection = new String[maxEntries];
@@ -1613,24 +1633,6 @@ public class MensaService extends RESTService {
       name.toLowerCase().contains("cafe")
     );
   }
-
-  // private JSONObject getContext(String email, JSONParser p)
-  //   throws ParseException {
-  //   String obj = ContextInfo.get(email);
-  //   //  System.out.println("contex for email " + email + ": " + obj);
-  //   if (obj != null) {
-  //     JSONObject context = (JSONObject) p.parse(obj);
-  //     if (
-  //       email != null &&
-  //       !"".equals(email) &&
-  //       context.getAsString("email") != null
-  //     ) {
-  //       context.appendField("email", email);
-  //     }
-  //     return context;
-  //   }
-  //   return new JSONObject();
-  // }
 
   private JSONObject getContext(String email) throws ParseException {
     Object obj = ContextInfo.get(email);
@@ -1748,35 +1750,37 @@ public class MensaService extends RESTService {
     }
   }
 
-  //   /**
-  //  *
-  //  */
-  // private static final long serialVersionUID = 1L;
-  // public String author;
-  //   public int stars;
-  //   public String comment;
-  //   public int mensaId;
-  //   public String timestamp;
+  private static class Rating implements Serializable {
 
-  //   @Override
-  //   public boolean equals(Object o) {
-  //     if (this == o) return true;
-  //     if (o == null || getClass() != o.getClass()) return false;
-  //     Rating rating = (Rating) o;
-  //     return (
-  //       stars == rating.stars &&
-  //       author.equals(rating.author) &&
-  //       Objects.equals(comment, rating.comment) &&
-  //       mensaId == rating.mensaId &&
-  //       timestamp.equals(rating.timestamp)
-  //     );
-  //   }
+    /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+    public String author;
+    public int stars;
+    public String comment;
+    public int mensaId;
+    public String timestamp;
 
-  //   @Override
-  //   public int hashCode() {
-  //     return Objects.hash(author, stars, comment, mensaId, timestamp);
-  //   }
-  // }
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Rating rating = (Rating) o;
+      return (
+        stars == rating.stars &&
+        author.equals(rating.author) &&
+        Objects.equals(comment, rating.comment) &&
+        mensaId == rating.mensaId &&
+        timestamp.equals(rating.timestamp)
+      );
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(author, stars, comment, mensaId, timestamp);
+    }
+  }
 
   private static class Picture implements Serializable {
 
@@ -1854,47 +1858,27 @@ public class MensaService extends RESTService {
     return Response.ok().entity(ratings).build();
   }
 
-  // /**
-  //  * Retrieve all ratings for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of ratings.
-  //  */
-  // @GET
-  // @Path("/dishes/{dish}/ratings")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // public Response getRatings(@PathParam("dish") String dish)
-  //   throws EnvelopeOperationFailedException {
-  //   final long responseStart = System.currentTimeMillis();
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
-  //   HashMap<String, Rating> response = getRatingsForDish(dish);
-  //   Context
-  //     .get()
-  //     .monitorEvent(
-  //       MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-  //       String.valueOf(System.currentTimeMillis() - responseStart)
-  //     );
-  //   return Response.ok().entity(response).build();
-  // }
+  /**
+   * Add a rating for a dish.
+   *
+   * @param dish Name of the dish.
+   * @return JSON encoded list of ratings.
+   */
+  @POST
+  @Path("/dishes/{dish}/ratings")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @RolesAllowed("authenticated")
+  public Response addRating(@PathParam("dish") String dish, Rating rating)
+    throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
+    storeRating(dish, rating);
+    return Response.ok().entity("not implemented").build();
+  }
 
-  // /**
-  //  * Add a rating for a dish.
-  //  *
-  //  * @param dish Name of the dish.
-  //  * @return JSON encoded list of ratings.
-  //  */
-  // @POST
-  // @Path("/dishes/{dish}/ratings")
-  // @Produces(MediaType.APPLICATION_JSON)
-  // @Consumes(MediaType.APPLICATION_JSON)
-  // @RolesAllowed("authenticated")
-  // public Response addRating(@PathParam("dish") String dish, Rating rating)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
-  //   HashMap<String, Rating> response = storeRating(dish, rating);
-  //   return Response.ok().entity(response).build();
-  // }
+  private boolean storeRating(String dish, Rating rating) {
+    return false;
+  }
 
   // /**
   //  * Delete a rating for a dish.
@@ -1908,10 +1892,8 @@ public class MensaService extends RESTService {
   // @Consumes(MediaType.APPLICATION_JSON)
   // @RolesAllowed("authenticated")
   // public Response deleteRating(@PathParam("dish") String dish)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_5, dish);
-  //   HashMap<String, Rating> response = removeRating(dish);
-  //   return Response.ok().entity(response).build();
+  //    {
+  //   return Response.ok().entity("not implemented").build();
   // }
 
   /**
@@ -1935,16 +1917,6 @@ public class MensaService extends RESTService {
     return Response.ok().entity(response).build();
   }
 
-  // private HashMap<String, Rating> getRatingsForDish(String dish)
-  //   throws EnvelopeOperationFailedException {
-  //   try {
-  //     Envelope env = getOrCreateRatingsEnvelopeForDish(dish);
-  //     return (HashMap<String, Rating>) env.getContent();
-  //   } catch (EnvelopeAccessDeniedException e) {
-  //     return new HashMap<>();
-  //   }
-  // }
-
   private HashMap<String, ArrayList<Picture>> getPicturesForDish(String dish)
     throws EnvelopeOperationFailedException {
     try {
@@ -1954,32 +1926,6 @@ public class MensaService extends RESTService {
       return new HashMap<>();
     }
   }
-
-  // private HashMap<String, Rating> storeRating(String dish, Rating rating)
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   rating.author = username;
-  //   rating.timestamp = getCurrentTimestamp();
-  //   Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
-  //   HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
-  //   ratings.put(username, rating);
-  //   envelope.setContent(ratings);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return ratings;
-  // }
-
-  // private HashMap<String, Rating> removeRating(String dish)
-  //   throws EnvelopeAccessDeniedException, EnvelopeOperationFailedException {
-  //   UserAgent userAgent = (UserAgent) Context.get().getMainAgent();
-  //   String username = userAgent.getLoginName();
-  //   Envelope envelope = getOrCreateRatingsEnvelopeForDish(dish);
-  //   HashMap<String, Rating> ratings = (HashMap<String, Rating>) envelope.getContent();
-  //   ratings.remove(username);
-  //   envelope.setContent(ratings);
-  //   Context.get().storeEnvelope(envelope, Context.get().getServiceAgent());
-  //   return ratings;
-  // }
 
   private Map<String, ArrayList<Picture>> storePicture(
     String dish,
@@ -2015,12 +1961,6 @@ public class MensaService extends RESTService {
     return pictures;
   }
 
-  // private Envelope getOrCreateRatingsEnvelopeForDish(String dish)
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   String envelopeName = RATINGS_ENVELOPE_PREFIX + dish;
-  //   return getOrCreateEnvelope(envelopeName, new HashMap<String, Rating>());
-  // }
-
   private Envelope getOrCreatePicturesEnvelopeForDish(String dish)
     throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
     String envelopeName = PICTURES_ENVELOPE_PREFIX + dish;
@@ -2029,11 +1969,6 @@ public class MensaService extends RESTService {
       new HashMap<String, ArrayList<Picture>>()
     );
   }
-
-  // private Envelope getOrCreateDishIndexEnvelope()
-  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-  //   return getOrCreateEnvelope(DISH_INDEX_ENVELOPE_NAME, new HashSet<>());
-  // }
 
   private Envelope getOrCreateEnvelope(
     String name,
