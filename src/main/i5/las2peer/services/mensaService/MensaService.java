@@ -1284,7 +1284,7 @@ public class MensaService extends RESTService {
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_10,
           String.valueOf(mensaID)
         );
-      saveDishesToIndex(menu, mensaID);
+      saveDishes(menu, mensaID);
       return menu;
     } catch (ParseException e) {
       e.printStackTrace();
@@ -1361,7 +1361,7 @@ public class MensaService extends RESTService {
   /**Saves the dishes for a  menu from a given mensa in the datbase
    * @param menu the menu of dishes that should be saved
    */
-  private void saveDishesToIndex(JSONArray menu, int mensaId) {
+  private void saveDishes(JSONArray menu, int mensaId) {
     Date lastUpdate = lastDishUpdate.get((Integer) mensaId);
 
     if (
