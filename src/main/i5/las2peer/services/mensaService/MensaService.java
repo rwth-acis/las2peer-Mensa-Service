@@ -593,7 +593,7 @@ public class MensaService extends RESTService {
   @GET
   @Path("/dishes/{id}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.TEXT_HTML)
   public Response getRatings(@PathParam("id") int id) {
     Context
       .get()
