@@ -111,19 +111,11 @@ public class MensaService extends RESTService {
   private String databasePassword;
   private SQLDatabase database; // The database instance to write to.
 
-  // private static final List<String> SUPPORTED_MENSAS = Arrays.asList(
-  //   "vita",
-  //   "academica",
-  //   "ahornstrasse"
-  // );
   private static final String ENVELOPE_PREFIX = "mensa-";
   // private static final String RATINGS_ENVELOPE_PREFIX =
   //   ENVELOPE_PREFIX + "ratings-";
   private static final String PICTURES_ENVELOPE_PREFIX =
     ENVELOPE_PREFIX + "pictures-";
-
-  // private static final String DISH_INDEX_ENVELOPE_NAME =
-  //   ENVELOPE_PREFIX + "dishes";
 
   public MensaService() {
     super();
@@ -140,21 +132,6 @@ public class MensaService extends RESTService {
         this.databasePort
       );
 
-    System.out.println(
-      "Database credentials: " +
-      this.databaseUser +
-      ", " +
-      this.databasePassword +
-      ", " +
-      this.databaseHost +
-      ", " +
-      this.databaseName +
-      ", " +
-      this.databasePort +
-      ", " +
-      this.databaseType
-    );
-
     try {
       Connection con = database.getDataSource().getConnection();
       con.close();
@@ -162,7 +139,8 @@ public class MensaService extends RESTService {
     } catch (SQLException e) {
       // Context
       //   .get()
-      //   .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_4, e.getMessage()); //this will throw an IllegalStateException
+      // .monitorEvent(MonitoringEvent.SERVICE_CUSTOM_ERROR_4, e.getMessage()); //this
+      // will throw an IllegalStateException because we are not in a service context
       e.printStackTrace();
       System.out.println("Failed to connect to Database: " + e.getMessage());
     }
@@ -269,7 +247,7 @@ public class MensaService extends RESTService {
   }
 
   /**
-   * This method returns the current menu of supported canteens.
+   * This method is used by the mensa bot. It returns the current menu of supported canteens.
    *
    * @param body Body needs to contain at least the name of the mensa.
    * @return Returns a JSON String containing the menu under the text property.
@@ -333,9 +311,6 @@ public class MensaService extends RESTService {
           }
           return Response.ok().entity(chatResponse).build();
         case "number_selection":
-          System.out.println(
-            "User selected " + bodyJson.getAsNumber("number") + "from a list"
-          );
           if (context.get("currentSelection") instanceof String[]) {
             String[] selection = (String[]) context.get("currentSelection");
             int selected = bodyJson.getAsNumber("number").intValue() - 1;
@@ -346,7 +321,6 @@ public class MensaService extends RESTService {
             context.remove("currentSelection");
             ContextInfo.put(email, context);
           }
-          System.out.println("Mensaname is now " + mensaName);
           break;
         case "menu":
           if (
@@ -357,15 +331,21 @@ public class MensaService extends RESTService {
           break;
       }
 
-      context = updateContext(bodyJson, context);
-
       if (mensaName == null && city == null) {
         city = context.getAsString("default_city");
         if (city == null) {
-          throw new ChatException("Please specify the mensa, for which you want to get the menu.\n"
-              + "You can also ask me about which mensas are available in your city");
+          throw new ChatException(
+            "Please specify the mensa, for which you want to get the menu.\n" +
+            "You can also ask me about which mensas are available in your city"
+          );
         }
       }
+
+      System.out.println(
+        "Menu queried for mensa " + mensaName + "and city " + city
+      );
+
+      context = updateContext(bodyJson, context);
 
       ResultSet mensas = findMensas(mensaName, city);
       JSONObject mensaObj = selectMensa(mensas, context);
@@ -400,6 +380,9 @@ public class MensaService extends RESTService {
       ContextInfo.put(email, context);
 
       event.put("time", System.currentTimeMillis() - start);
+      event.put("mensaName", mensaObj.getAsString("name"));
+      event.put("city", mensaObj.getAsString("city"));
+
       Context
         .get()
         .monitorEvent(
