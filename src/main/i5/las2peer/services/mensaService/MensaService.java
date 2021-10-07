@@ -1840,7 +1840,7 @@ public class MensaService extends RESTService {
   @GET
   @Path("/dishes/{dish}/ratings")
   @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.TEXT_PLAIN)
   public Response getRatings(@PathParam("dish") String dish)
     throws EnvelopeOperationFailedException {
     final long responseStart = System.currentTimeMillis();
