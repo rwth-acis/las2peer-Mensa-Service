@@ -1125,7 +1125,7 @@ public class MensaService extends RESTService {
   /**Gets the menu for the mensa and formats it as a string which can be presented in chat
    * @param name The name of the mensa
    * @param id The id of the mensa for the OpenMensa API (https://doc.openmensa.org/api/v2)
-   * @param date The date for which the menu should be returned
+   * @param day The date for which the menu should be returned in weekday format e.g. "Sunday"
    */
   private String createMenuChatResponse(String name, int id, String day)
     throws SQLException, ChatException {
