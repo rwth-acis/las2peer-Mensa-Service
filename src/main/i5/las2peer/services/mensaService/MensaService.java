@@ -364,7 +364,7 @@ public class MensaService extends RESTService {
       String responseString = createMenuChatResponse(
         mensaObj.getAsString("name"),
         mensaObj.getAsNumber("id").intValue(),
-        null //date
+        day
       );
 
       city = mensaObj.getAsString("city");
