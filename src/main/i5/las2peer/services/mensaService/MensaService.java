@@ -1801,15 +1801,58 @@ public class MensaService extends RESTService {
     }
   }
 
-  // //old implementation using envelopes
+  private JSONArray getRatingsForDish(String dishName) {
+    JSONArray result = new JSONArray();
+    try {
+      Connection con = getDatabaseConnection();
+      PreparedStatement s = con.prepareStatement(
+        "SELECT author, stars, comment, timestamp , category, mensas.name, mensas.city FROM reviews JOIN mensas ON mensas.id=reviews.mensaId JOIN dishes ON dishes.id=reviews.dishId WHERE reviews.name=?"
+      );
+      s.setString(1, dishName);
+      ResultSet res = s.executeQuery();
+      while (res.next()) {
+        JSONObject rating = new JSONObject();
+        rating.put("author", res.getString(1));
+        rating.put("stars", res.getInt(2));
+        rating.put("comment", res.getString(3));
+        rating.put("timestamp", res.getDate(4));
+        rating.put("category", res.getString(5));
+        rating.put("mensaName", res.getString(6));
+        rating.put("city", res.getString(7));
 
-  // public static int ordinalIndexOf(String str, String substr, int n) {
-  //   int pos = -1;
-  //   do {
-  //     pos = str.indexOf(substr, pos + 1);
-  //   } while (n-- > 0 && pos != -1);
-  //   return pos;
-  // }
+        result.add(rating);
+      }
+      con.close();
+      return result;
+    } catch (SQLException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
+  /**
+   * Retrieve all ratings for a dish.
+   *
+   * @param dish Name of the dish.
+   * @return JSON encoded list of ratings.
+   */
+  @GET
+  @Path("/dishes/{dish}/ratings")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response getRatings(@PathParam("dish") String dish)
+    throws EnvelopeOperationFailedException {
+    final long responseStart = System.currentTimeMillis();
+    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_3, dish);
+    JSONArray ratings = getRatingsForDish(dish);
+    Context
+      .get()
+      .monitorEvent(
+        MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
+        String.valueOf(System.currentTimeMillis() - responseStart)
+      );
+    return Response.ok().entity(ratings).build();
+  }
 
   // /**
   //  * Retrieve all ratings for a dish.
