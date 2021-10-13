@@ -158,7 +158,10 @@ public class MensaService extends RESTService {
       "# Menu Queried for Mensa\n" +
       "## Format\n" +
       "```json\n" +
-      "{ msg: \"<id of mensa>\"}\n" +
+      "{mensaName:<name of canteen>,\n" +
+      "mensaId: <id of canteen>,\n" +
+      "city:<city of canteen>,\n" +
+      "day:<day for which the menu was asked>}\n" +
       "```\n" +
       "\n" +
       "## Examples\n" +
@@ -273,7 +276,8 @@ public class MensaService extends RESTService {
     chatResponse.put("closeContext", true);
 
     final long start = System.currentTimeMillis();
-    JSONObject event = new JSONObject();
+    JSONObject monitorEvent41 = new JSONObject();
+    JSONObject monitorEvent1 = new JSONObject();
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
@@ -285,8 +289,8 @@ public class MensaService extends RESTService {
 
       JSONObject context = getContext(email);
 
-      event.put("email", email);
-      event.put("task", "getMenu");
+      monitorEvent41.put("email", email);
+      monitorEvent41.put("task", "getMenu");
 
       switch (intent) {
         case "quit":
@@ -340,7 +344,7 @@ public class MensaService extends RESTService {
       }
 
       System.out.println(
-        "Menu queried for mensa " + mensaName + "and city " + city
+        "Menu queried for mensa " + mensaName + " and city " + city
       );
 
       context = updateContext(bodyJson, context);
@@ -348,11 +352,16 @@ public class MensaService extends RESTService {
       ResultSet mensas = findMensas(mensaName, city);
       JSONObject mensaObj = selectMensa(mensas, context);
 
+      monitorEvent1.put("mensaName", mensaObj.getAsString("name"));
+      monitorEvent1.put("mensaId", mensaObj.getAsString("id"));
+      monitorEvent1.put("city", mensaObj.getAsString("city"));
+      monitorEvent1.put("day", day);
+
       Context
         .get()
         .monitorEvent(
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_1,
-          mensaObj.getAsString("id")
+          monitorEvent1.toString()
         );
 
       //TODO: adjust the funftion to get menu for particular day
@@ -377,15 +386,15 @@ public class MensaService extends RESTService {
       context.put("selected_mensa", mensaObj); //save the selected mensa in context. If user will add a review, this one will be selected if no canteen is provided
       ContextInfo.put(email, context);
 
-      event.put("time", System.currentTimeMillis() - start);
-      event.put("mensaName", mensaObj.getAsString("name"));
-      event.put("city", mensaObj.getAsString("city"));
+      monitorEvent41.put("time", System.currentTimeMillis() - start);
+      monitorEvent41.put("mensaName", mensaObj.getAsString("name"));
+      monitorEvent41.put("city", mensaObj.getAsString("city"));
 
       Context
         .get()
         .monitorEvent(
           MonitoringEvent.SERVICE_CUSTOM_MESSAGE_41,
-          event.toString()
+          monitorEvent41.toString()
         );
     } catch (ChatException e) {
       chatResponse.appendField("text", e.getMessage());
