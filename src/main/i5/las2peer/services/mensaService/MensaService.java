@@ -1820,27 +1820,27 @@ public class MensaService extends RESTService {
     }
   }
 
-  /**
-   * Add a rating for a dish.
-   *
-   * @param dish Name of the dish.
-   * @return JSON encoded list of ratings.
-   */
-  @POST
-  @Path("/dishes/{dish}/ratings")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @RolesAllowed("authenticated")
-  public Response addRating(@PathParam("dish") String dish, Rating rating)
-    throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
-    Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
-    storeRating(dish, rating);
-    return Response.ok().entity("not implemented").build();
-  }
+  // /**
+  //  * Add a rating for a dish.
+  //  *
+  //  * @param dish Name of the dish.
+  //  * @return JSON encoded list of ratings.
+  //  */
+  // @POST
+  // @Path("/dishes/{dish}/ratings")
+  // @Produces(MediaType.APPLICATION_JSON)
+  // @Consumes(MediaType.APPLICATION_JSON)
+  // @RolesAllowed("authenticated")
+  // public Response addRating(@PathParam("dish") String dish, Rating rating)
+  //   throws EnvelopeOperationFailedException, EnvelopeAccessDeniedException {
+  //   Context.get().monitorEvent(MonitoringEvent.SERVICE_CUSTOM_MESSAGE_4, dish);
+  //   storeRating(dish, rating);
+  //   return Response.ok().entity("not implemented").build();
+  // }
 
-  private boolean storeRating(String dish, Rating rating) {
-    return false;
-  }
+  // private boolean storeRating(String dish, Rating rating) {
+  //   return false;
+  // }
 
   // /**
   //  * Delete a rating for a dish.
