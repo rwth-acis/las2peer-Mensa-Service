@@ -316,7 +316,10 @@ public class MensaService extends RESTService {
           if (context.get("currentSelection") instanceof String[]) {
             String[] selection = (String[]) context.get("currentSelection");
             int selected = bodyJson.getAsNumber("number").intValue() - 1;
-            System.out.println("Selection: " + selection+ " user selected "+selected);
+
+            System.out.println("Selection: " + selection);
+            printArray(selection);
+            
             if (selection.length > selected) {
               mensaName = selection[selected];
             }
@@ -408,6 +411,14 @@ public class MensaService extends RESTService {
     /* note that exceptions are sent with status ok we might need to reflect the exception in the status code.
      *I have not tested how the social bot manager handles those though
      */
+  }
+
+  private void printArray(String[] selection) {
+    for (String string : selection) {
+      System.out.print(string+", ");
+      
+    }
+    System.out.println("");
   }
 
   /**
