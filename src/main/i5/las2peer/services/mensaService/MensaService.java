@@ -316,6 +316,7 @@ public class MensaService extends RESTService {
           if (context.get("currentSelection") instanceof String[]) {
             String[] selection = (String[]) context.get("currentSelection");
             int selected = bodyJson.getAsNumber("number").intValue() - 1;
+            System.out.println("Selection: " + selection+ " user selected "+selected);
             if (selection.length > selected) {
               mensaName = selection[selected];
             }
@@ -343,10 +344,6 @@ public class MensaService extends RESTService {
         }
       }
 
-      System.out.println(
-        "Menu queried for mensa " + mensaName + " and city " + city
-      );
-
       context = updateContext(bodyJson, context);
 
       ResultSet mensas = findMensas(mensaName, city);
@@ -356,6 +353,10 @@ public class MensaService extends RESTService {
       monitorEvent1.put("mensaId", mensaObj.getAsString("id"));
       monitorEvent1.put("city", mensaObj.getAsString("city"));
       monitorEvent1.put("day", day);
+
+      System.out.println(
+        "Menu queried for mensa " + mensaObj.getAsString("name") + " and city " + city
+      );
 
       Context
         .get()
