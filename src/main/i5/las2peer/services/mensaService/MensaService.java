@@ -292,6 +292,8 @@ public class MensaService extends RESTService {
       monitorEvent41.put("email", email);
       monitorEvent41.put("task", "getMenu");
 
+      System.out.println("user: " + email);
+
       switch (intent) {
         case "quit":
           ContextInfo.remove(email);
