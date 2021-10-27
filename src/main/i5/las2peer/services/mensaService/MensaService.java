@@ -355,6 +355,7 @@ public class MensaService extends RESTService {
       JSONObject mensaObj = selectMensa(mensas, context);
 
       mensaName = mensaObj.getAsString("name");
+      city = mensaObj.getAsString("city");
 
       monitorEvent1.put("mensaName", mensaObj.getAsString("name"));
       monitorEvent1.put("mensaId", mensaObj.getAsString("id"));
@@ -1209,7 +1210,14 @@ public class MensaService extends RESTService {
     }
   }
 
+  /**
+   * Looks up all entries matching a given name and city in the database and returns the result set
+   * @param mensaName name of canteen to search for if not provided, all entries matching the city are returned
+   * @param city optional city parameter
+   * @return entries matching canteen and city
+   */
   private ResultSet findMensas(String mensaName, String city) {
+    System.out.println("Looking up canteens for " + mensaName + " and " + city);
     if (city == null) return findMensas(mensaName);
     Connection dbConnection = null;
     PreparedStatement statement = null;
