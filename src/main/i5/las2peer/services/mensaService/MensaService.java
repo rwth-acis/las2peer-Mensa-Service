@@ -301,11 +301,11 @@ public class MensaService extends RESTService {
           chatResponse.put("text", "ok.");
           return Response.ok(chatResponse).build();
         case "confirmation":
-          if (context.getAsString("selected_city") != null) {
-            //user wants to set default city
-            city = context.getAsString("selected_city");
-            context.put("default_city", city);
-            context.remove("selected_city");
+          if (context.getAsString("selected_mensa") != null) {
+            //user wants to set default mensa
+            mensaName =
+              ((JSONObject) context.get("selected_mensa")).getAsString("name");
+            context.put("default_mensa", mensaName);
             ContextInfo.put(email, context);
 
             chatResponse.put("text", "Alright. Done! 🎉");
@@ -319,7 +319,7 @@ public class MensaService extends RESTService {
 
             System.out.println("Selection: " + selection);
             printArray(selection);
-            
+
             if (selection.length > selected) {
               mensaName = selection[selected];
             }
@@ -337,9 +337,9 @@ public class MensaService extends RESTService {
           break;
       }
 
-      if (mensaName == null && city == null) {
-        city = context.getAsString("default_city");
-        if (city == null) {
+      if (mensaName == null) {
+        mensaName = context.getAsString("default_mensa");
+        if (mensaName == null) {
           throw new ChatException(
             "Please specify the mensa, for which you want to get the menu.\n" +
             "You can also ask me about which mensas are available in your city"
@@ -352,13 +352,15 @@ public class MensaService extends RESTService {
       ResultSet mensas = findMensas(mensaName, city);
       JSONObject mensaObj = selectMensa(mensas, context);
 
+      mensaName = mensaObj.getAsString("name");
+
       monitorEvent1.put("mensaName", mensaObj.getAsString("name"));
       monitorEvent1.put("mensaId", mensaObj.getAsString("id"));
       monitorEvent1.put("city", mensaObj.getAsString("city"));
       monitorEvent1.put("day", day);
 
       System.out.println(
-        "Menu queried for mensa " + mensaObj.getAsString("name") + " and city " + city
+        "Menu queried for mensa " + mensaName + " and city " + city
       );
 
       Context
@@ -370,22 +372,25 @@ public class MensaService extends RESTService {
 
       //TODO: adjust the funftion to get menu for particular day
       String responseString = createMenuChatResponse(
-        mensaObj.getAsString("name"),
+        mensaName,
         mensaObj.getAsNumber("id").intValue(),
         day
       );
 
-      city = mensaObj.getAsString("city");
-      if (city != null && !city.equals(context.getAsString("default_city"))) {
-        //ask to set default city when fetching menu for new city
+      if (
+        context.getAsString("default_mensa") == null ||
+        !mensaName.equals(context.getAsString("default_mensa"))
+      ) {
+        //ask to set default mensa when fetching menu for new mensa
         responseString +=
           "\n\n Do you want to set " +
-          city +
-          " as your default city?\nThis helps me to find your mensa better next time 🙂";
-        context.put("selected_city", city);
+          mensaName +
+          " as your default mensa?\nIf you do, you can just write /menu to get the menu for this mensa next time 🙂";
+        context.put("selected_mensa", mensaObj);
         ContextInfo.put(email, context);
         chatResponse.put("closeContext", false); // We expect the user to answer to the question.
       }
+
       chatResponse.put("text", responseString);
       context.put("selected_mensa", mensaObj); //save the selected mensa in context. If user will add a review, this one will be selected if no canteen is provided
       ContextInfo.put(email, context);
@@ -411,14 +416,6 @@ public class MensaService extends RESTService {
     /* note that exceptions are sent with status ok we might need to reflect the exception in the status code.
      *I have not tested how the social bot manager handles those though
      */
-  }
-
-  private void printArray(String[] selection) {
-    for (String string : selection) {
-      System.out.print(string+", ");
-      
-    }
-    System.out.println("");
   }
 
   /**
@@ -1714,6 +1711,13 @@ public class MensaService extends RESTService {
       default:
         return -1;
     }
+  }
+
+  private void printArray(String[] selection) {
+    for (String string : selection) {
+      System.out.print(string + ", ");
+    }
+    System.out.println("");
   }
 
   /** Exceptions ,with messages, that should be returned in Chat */
