@@ -1,5 +1,5 @@
 /*Initializes the table for mensa dishes*/
-CREATE TABLE `dishes` IF NOT EXISTS `dishes` 
+CREATE TABLE IF NOT EXISTS `dishes` 
 (
     `id` int (12) NOT NULL,
     `mensaId` int (12) NOT NULL,
@@ -18,7 +18,7 @@ SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 /*Initializes the table for mensas*/
-IF NOT EXISTS `mensas` CREATE TABLE `mensas` 
+CREATE TABLE `mensas` IF NOT EXISTS `mensas`
 (
   `id` int
 (12) NOT NULL,
