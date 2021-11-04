@@ -5,7 +5,6 @@
 /tmp/
 /log/
 /lib/
-/bin/
 /etc/ivy/ivy.jar
 /service/
 /out/
@@ -22,7 +21,6 @@ archiva_credentials.xml
 .vscode/
 /eclipse-formatter.xml
 etc/launcher-configuration.ini
-
 .gradle
 build
 app/bin
