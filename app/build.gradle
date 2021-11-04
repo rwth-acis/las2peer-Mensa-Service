@@ -24,7 +24,9 @@ dependencies {
     compileOnly "i5:las2peer-bundle:${project.property('core.version')}"
 
     // // Add service dependencies here
-    // implementation "mysql:mysql-connector-java:8.0.11"
+    implementation "mysql:mysql-connector-java:8.0.13"
+    implementation "org.json:json:20190722"
+    implementation "org.apache.commons:commons-dbcp2:2.7.0"
 }
 
 configurations {
