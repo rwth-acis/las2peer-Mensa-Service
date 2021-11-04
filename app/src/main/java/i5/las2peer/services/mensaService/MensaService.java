@@ -158,10 +158,10 @@ public class MensaService extends RESTService {
       "# Menu Queried for Mensa\n" +
       "## Format\n" +
       "```json\n" +
-      "{mensaName:<name of canteen>,\n" +
-      "mensaId: <id of canteen>,\n" +
-      "city:<city of canteen>,\n" +
-      "day:<day for which the menu was asked>}\n" +
+      "{mensaName:'name of canteen',\n" +
+      "mensaId: 'id of canteen',\n" +
+      "city:'city of canteen',\n" +
+      "day:'day for which the menu was asked'}\n" +
       "```\n" +
       "\n" +
       "## Examples\n" +
@@ -603,13 +603,13 @@ public class MensaService extends RESTService {
    *
    * @param id id of the dish.
    * @return JSON encoded list of ratings. rating: 
-   *    {"author": <author of review>
-        "stars":<stars given by the author between 1 and 5 stars>;
-        "comment": <optional comment>
-        "timestamp": <timestamp of record>
-        "category": <category of dish (klassiker, Vegetarisch,...)>
-        "mensaName":<name of the canteen at which the food was consumed>
-        "city": <city in which the canteen is located>}
+   *    {"author": 'author of review'
+        "stars":'stars given by the author between 1 and 5 stars';
+        "comment": 'optional comment'
+        "timestamp": 'timestamp of record'
+        "category": 'category of dish (klassiker, Vegetarisch,...)'
+        "mensaName":'name of the canteen at which the food was consumed'
+        "city": 'city in which the canteen is located'}
    */
   @GET
   @Path("/dishes/{id}/ratings")
@@ -1897,7 +1897,10 @@ public class MensaService extends RESTService {
    * Delete a picture for a dish.
    *
    * @param dish Name of the dish.
+   * @param picture picture to be deleted
    * @return JSON encoded list of pictures.
+   * @throws EnvelopeOperationFailedException could not delete envelope
+   * @throws EnvelopeAccessDeniedException no access allowed 
    */
   @DELETE
   @Path("/dishes/{dish}/pictures")
