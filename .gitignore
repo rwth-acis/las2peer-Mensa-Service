@@ -23,3 +23,10 @@ archiva_credentials.xml
 /eclipse-formatter.xml
 etc/launcher-configuration.ini
 
+.gradle
+build
+app/bin
+etc/startup/*
+app/export/*
+app/log/*
+log/*
