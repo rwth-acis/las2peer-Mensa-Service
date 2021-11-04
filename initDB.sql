@@ -1,5 +1,5 @@
 /*Initializes the table for mensa dishes*/
-IF NOT EXISTS `dishes` CREATE TABLE `dishes` 
+CREATE TABLE `dishes` IF NOT EXISTS `dishes` 
 (
     `id` int (12) NOT NULL,
     `mensaId` int (12) NOT NULL,
