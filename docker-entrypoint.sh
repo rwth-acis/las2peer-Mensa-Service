@@ -24,7 +24,7 @@ export CREATE_DB_SQL='initdb.sql'
     echo "Mandatory variable DATABASE_PASSWORD is not set. Add -e DATABASE_PASSWORD=mypasswd to your arguments." && exit 1
 
 # set defaults for optional service parameters
-[[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='qvPass'
+[[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='mensa'
 [[ -z "${DATABASE_HOST}" ]] && export DATABASE_HOST='mysql'
 [[ -z "${DATABASE_PORT}" ]] && export DATABASE_PORT='3306'
 
