@@ -18,7 +18,7 @@ SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 /*Initializes the table for mensas*/
-CREATE TABLE `mensas` IF NOT EXISTS `mensas`
+CREATE TABLE IF NOT EXISTS `mensas`
 (
   `id` int
 (12) NOT NULL,
@@ -41,7 +41,7 @@ SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 /*Initializes the table for dish reviews*/
-IF NOT EXISTS `reviews` CREATE TABLE `reviews` 
+IF NOT EXISTS  CREATE TABLE `reviews` 
 (   `id` int(12) NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `author` varchar
         (255) CHARACTER
