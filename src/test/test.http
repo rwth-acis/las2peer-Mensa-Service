@@ -1,6 +1,0 @@
-POST http://localhost:8080/mensa/dishes/Yaourt/ratings
-Content-Type: application/json
-
- {"stars": 5,"comment": "My Comment","mensaId": 187, "author":"alice" , "timestamp": null}
-
-
