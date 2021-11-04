@@ -21,7 +21,7 @@ archiva_credentials.xml
 .vscode/
 /eclipse-formatter.xml
 etc/launcher-configuration.ini
-
+bin/*
 .gradle
 build
 app/bin
