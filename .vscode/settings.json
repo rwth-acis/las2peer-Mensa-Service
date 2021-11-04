@@ -1,5 +1,5 @@
 {
     "java.dependency.syncWithFolderExplorer": true,
     "java.format.settings.url": "eclipse-formatter.xml",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "automatic"
 }
