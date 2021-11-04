@@ -1,5 +1,5 @@
 /*Initializes the table for mensa dishes*/
-CREATE TABLE `dishes` IF NOT EXISTS `dishes`;
+IF NOT EXISTS `dishes` CREATE TABLE `dishes` 
 (
     `id` int (12) NOT NULL,
     `mensaId` int (12) NOT NULL,
@@ -18,7 +18,7 @@ SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 /*Initializes the table for mensas*/
-CREATE TABLE `mensas` IF NOT EXISTS `mensas`
+IF NOT EXISTS `mensas` CREATE TABLE `mensas` 
 (
   `id` int
 (12) NOT NULL,
@@ -41,7 +41,7 @@ SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 /*Initializes the table for dish reviews*/
-CREATE TABLE `reviews` IF NOT EXISTS `reviews`
+IF NOT EXISTS `reviews` CREATE TABLE `reviews` 
 (   `id` int(12) NOT NULL PRIMARY KEY AUTO_INCREMENT,
     `author` varchar
         (255) CHARACTER
