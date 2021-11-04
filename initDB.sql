@@ -44,7 +44,7 @@ COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 /*Initializes the table for dish reviews*/
 IF NOT EXISTS  CREATE TABLE `reviews` 
-(   `id` int(12) NOT NULL PRIMARY KEY AUTO_INCREMENT,
+(   `id` int(12) NOT NULL auto_increment,
     `author` varchar
         (255) CHARACTER
         SET utf8
@@ -59,7 +59,8 @@ IF NOT EXISTS  CREATE TABLE `reviews`
         SET utf8
         COLLATE utf8_general_ci ,
     FOREIGN KEY (`mensaId`) REFERENCES mensas(`id`),
-    FOREIGN KEY (`dishId`) REFERENCES dishes(`id`)
+    FOREIGN KEY (`dishId`) REFERENCES dishes(`id`),
+    CONSTRAINT id_PK PRIMARY KEY (id)
 ) ENGINE = InnoDB AUTO_INCREMENT = 414 CHARACTER
 SET = utf8
 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
