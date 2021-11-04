@@ -19,7 +19,7 @@ RUN dos2unix /src/etc/i5.las2peer.services.mensaService.MensaService.properties
 RUN dos2unix /src/docker-entrypoint.sh
 
 RUN chmod +x ./gradlew && ./gradlew build --exclude-task test
-RUN chmod +x /src/entrypoint.sh
+RUN chmod +x /src/docker-entrypoint.sh
 
 EXPOSE $HTTP_PORT
 EXPOSE $HTTPS_PORT
