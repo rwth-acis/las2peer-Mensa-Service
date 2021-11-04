@@ -18,20 +18,15 @@ export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
 export CREATE_DB_SQL='initdb.sql'
 
 # check mandatory variables
-[[ -z "${MYSQL_USER}" ]] && \
-    echo "Mandatory variable MYSQL_USER is not set. Add -e MYSQL_USER=myuser to your arguments." && exit 1
-[[ -z "${MYSQL_PASSWORD}" ]] && \
-    echo "Mandatory variable MYSQL_PASSWORD is not set. Add -e MYSQL_PASSWORD=mypasswd to your arguments." && exit 1
+[[ -z "${DATABASE_USER}" ]] && \
+    echo "Mandatory variable DATABASE_USER is not set. Add -e DATABASE_USER=myuser to your arguments." && exit 1
+[[ -z "${DATABASE_PASSWORD}" ]] && \
+    echo "Mandatory variable DATABASE_PASSWORD is not set. Add -e DATABASE_PASSWORD=mypasswd to your arguments." && exit 1
 
 # set defaults for optional service parameters
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='qvPass'
-[[ -z "${MYSQL_HOST}" ]] && export MYSQL_HOST='mysql'
-[[ -z "${MYSQL_PORT}" ]] && export MYSQL_PORT='3306'
-[[ -z "${MYSQL_EXAMPLE_USER}" ]] && export MYSQL_EXAMPLE_USER='example'
-[[ -z "${MYSQL_EXAMPLE_PASSWORD}" ]] && export MYSQL_EXAMPLE_PASSWORD='example'
-[[ -z "${MYSQL_EXAMPLE_HOST}" ]] && export MYSQL_EXAMPLE_HOST='mysql'
-[[ -z "${MYSQL_EXAMPLE_PORT}" ]] && export MYSQL_EXAMPLE_PORT='3306'
-[[ -z "${RESULT_TIMEOUT}" ]] && export RESULT_TIMEOUT='360'
+[[ -z "${DATABASE_HOST}" ]] && export DATABASE_HOST='mysql'
+[[ -z "${DATABASE_PORT}" ]] && export DATABASE_PORT='3306'
 
 
 # set defaults for optional web connector parameters
@@ -49,11 +44,11 @@ export CREATE_DB_SQL='initdb.sql'
 function set_in_service_config {
     sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${SERVICE_PROPERTY_FILE}
 }
-set_in_service_config databaseHost ${MYSQL_HOST}
-set_in_service_config databasePort ${MYSQL_PORT}
-set_in_service_config databaseName ${MYSQL_DATABASE}
-set_in_service_config databaseUser ${MYSQL_USER}
-set_in_service_config databasePassword ${MYSQL_PASSWORD}
+set_in_service_config databaseHost ${DATABASE_HOST}
+set_in_service_config databasePort ${DATABASE_PORT}
+set_in_service_config databaseName ${DATABASE_NAME}
+set_in_service_config databaseUser ${DATABASE_USER}
+set_in_service_config databasePassword ${DATABASE_PASSWORD}
 
 
 # configure web connector properties
@@ -73,16 +68,16 @@ set_in_web_config enableCrossOriginResourceSharing ${ENABLE_CROSS_ORIGIN_RESOURC
 set_in_web_config oidcProviders ${OIDC_PROVIDERS}
 
 # ensure the database is ready
-while ! mysqladmin ping -h${MYSQL_HOST} -P${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQL_PASSWORD} --silent; do
-    echo "Waiting for mysql at ${MYSQL_HOST}:${MYSQL_PORT}..."
+while ! mysqladmin ping -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} --silent; do
+    echo "Waiting for mysql at ${DATABASE_HOST}:${DATABASE_PORT}..."
     sleep 1
 done
-echo "${MYSQL_HOST}:${MYSQL_PORT} is available. Continuing..."
+echo "${DATABASE_HOST}:${DATABASE_PORT} is available. Continuing..."
 
 # Create the database on first run
-if ! mysql -h${MYSQL_HOST} -P${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQL_PASSWORD} -e "desc ${MYSQL_DATABASE}.mensas" > /dev/null 2>&1; then
+if ! mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} -e "desc ${DATABASE_NAME}.mensas" > /dev/null 2>&1; then
     echo "Creating database schema..."
-    mysql -h${MYSQL_HOST} -P${MYSQL_PORT} -u${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE} < ${CREATE_DB_SQL}
+    mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} ${DATABASE_NAME} < ${CREATE_DB_SQL}
 fi
 
 
