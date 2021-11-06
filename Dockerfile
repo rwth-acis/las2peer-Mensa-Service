@@ -1,29 +1,27 @@
 FROM openjdk:14-jdk-alpine
 
-ENV LAS2PEER_PORT=9014
-ENV DATABASE_NAME=LAS2PEERMON
-ENV DATABASE_HOST=mobsos-mysql.mobsos
-ENV DATABASE_PORT=3306
-ENV DATABASE_USER=root
-ENV DATABASE_PASSWORD=password
+ENV HTTP_PORT=8080
+ENV HTTPS_PORT=8443
+ENV LAS2PEER_PORT=9011
 
-RUN apk add --update bash mysql-client apache-ant curl && rm -f /var/cache/apk/*
+RUN apk add --update bash mysql-client dos2unix curl && rm -f /var/cache/apk/*
 RUN addgroup -g 1000 -S las2peer && \
     adduser -u 1000 -S las2peer -G las2peer
 
 COPY --chown=las2peer:las2peer . /src
 WORKDIR /src
 
-RUN chmod -R a+rwx /src
-RUN chmod +x /src/docker-entrypoint.sh
-#might need to comment out the following line
-RUN dos2unix /src/etc/i5.las2peer.services.mensaService.MensaService.properties 
-
-RUN dos2unix /src/etc/ant_configuration/service.properties
-RUN dos2unix docker-entrypoint.sh
 # run the rest as unprivileged user
 USER las2peer
-RUN ant jar startscripts
+RUN dos2unix ./gradlew
+RUN dos2unix /src/gradle.properties
+RUN dos2unix /src/etc/i5.las2peer.services.mensaService.MensaService.properties
+RUN dos2unix /src/docker-entrypoint.sh
 
+RUN chmod +x ./gradlew && ./gradlew build --exclude-task test
+RUN chmod +x /src/docker-entrypoint.sh
+
+EXPOSE $HTTP_PORT
+EXPOSE $HTTPS_PORT
 EXPOSE $LAS2PEER_PORT
 ENTRYPOINT ["/src/docker-entrypoint.sh"]

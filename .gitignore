@@ -5,7 +5,6 @@
 /tmp/
 /log/
 /lib/
-/bin/
 /etc/ivy/ivy.jar
 /service/
 /out/
@@ -22,4 +21,13 @@ archiva_credentials.xml
 .vscode/
 /eclipse-formatter.xml
 etc/launcher-configuration.ini
-
+.gradle
+build
+app/bin
+etc/startup/*
+app/export/*
+app/log/*
+log/*
+app/.settings/org.eclipse.buildship.core.prefs
+app/.project
+.vscode/*

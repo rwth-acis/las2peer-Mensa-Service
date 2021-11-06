@@ -9,23 +9,63 @@ fi
 NODE_ID_SEED=${NODE_ID_SEED:-$RANDOM}
 # set some helpful variables
 export SERVICE_PROPERTY_FILE='etc/i5.las2peer.services.mensaService.MensaService.properties'
-export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' etc/ant_configuration/service.properties)
-export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' etc/ant_configuration/service.properties)
-export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' etc/ant_configuration/service.properties)
-export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
-export CREATE_DB_SQL='etc/databaseInit.sql'
+export WEB_CONNECTOR_PROPERTY_FILE='etc/i5.las2peer.connectors.webConnector.WebConnector.properties'
+export SERVICE_VERSION=$(awk -F "=" '/service.version/ {print $2}' gradle.properties )
+export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' gradle.properties )
+export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties )
 
+export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
+export CREATE_DB_SQL='initdb.sql'
+
+# check mandatory variables
+[[ -z "${DATABASE_USER}" ]] && \
+    echo "Mandatory variable DATABASE_USER is not set. Add -e DATABASE_USER=myuser to your arguments." && exit 1
+[[ -z "${DATABASE_PASSWORD}" ]] && \
+    echo "Mandatory variable DATABASE_PASSWORD is not set. Add -e DATABASE_PASSWORD=mypasswd to your arguments." && exit 1
+
+# set defaults for optional service parameters
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='mensa'
+[[ -z "${DATABASE_HOST}" ]] && export DATABASE_HOST='mysql'
+[[ -z "${DATABASE_PORT}" ]] && export DATABASE_PORT='3306'
+
+
+# set defaults for optional web connector parameters
+[[ -z "${START_HTTP}" ]] && export START_HTTP='TRUE'
+[[ -z "${START_HTTPS}" ]] && export START_HTTPS='FALSE'
+[[ -z "${SSL_KEYSTORE}" ]] && export SSL_KEYSTORE=''
+[[ -z "${SSL_KEY_PASSWORD}" ]] && export SSL_KEY_PASSWORD=''
+[[ -z "${CROSS_ORIGIN_RESOURCE_DOMAIN}" ]] && export CROSS_ORIGIN_RESOURCE_DOMAIN='*'
+[[ -z "${CROSS_ORIGIN_RESOURCE_MAX_AGE}" ]] && export CROSS_ORIGIN_RESOURCE_MAX_AGE='60'
+[[ -z "${ENABLE_CROSS_ORIGIN_RESOURCE_SHARING}" ]] && export ENABLE_CROSS_ORIGIN_RESOURCE_SHARING='TRUE'
+[[ -z "${OIDC_PROVIDERS}" ]] && export OIDC_PROVIDERS='https://api.learning-layers.eu/o/oauth2,https://accounts.google.com'
+
+# configure service properties
 
 function set_in_service_config {
     sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${SERVICE_PROPERTY_FILE}
 }
-cp $SERVICE_PROPERTY_FILE.sample $SERVICE_PROPERTY_FILE
-set_in_service_config databaseName ${DATABASE_NAME}
 set_in_service_config databaseHost ${DATABASE_HOST}
 set_in_service_config databasePort ${DATABASE_PORT}
+set_in_service_config databaseName ${DATABASE_NAME}
 set_in_service_config databaseUser ${DATABASE_USER}
 set_in_service_config databasePassword ${DATABASE_PASSWORD}
+
+
+# configure web connector properties
+
+function set_in_web_config {
+    sed -i "s?${1}[[:blank:]]*=.*?${1}=${2}?g" ${WEB_CONNECTOR_PROPERTY_FILE}
+}
+set_in_web_config httpPort ${HTTP_PORT}
+set_in_web_config httpsPort ${HTTPS_PORT}
+set_in_web_config startHttp ${START_HTTP}
+set_in_web_config startHttps ${START_HTTPS}
+set_in_web_config sslKeystore ${SSL_KEYSTORE}
+set_in_web_config sslKeyPassword ${SSL_KEY_PASSWORD}
+set_in_web_config crossOriginResourceDomain ${CROSS_ORIGIN_RESOURCE_DOMAIN}
+set_in_web_config crossOriginResourceMaxAge ${CROSS_ORIGIN_RESOURCE_MAX_AGE}
+set_in_web_config enableCrossOriginResourceSharing ${ENABLE_CROSS_ORIGIN_RESOURCE_SHARING}
+set_in_web_config oidcProviders ${OIDC_PROVIDERS}
 
 # ensure the database is ready
 while ! mysqladmin ping -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} --silent; do
@@ -34,12 +74,12 @@ while ! mysqladmin ping -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER}
 done
 echo "${DATABASE_HOST}:${DATABASE_PORT} is available. Continuing..."
 
-
-# Create and migrate the database on first run
+# Create the database on first run
 if ! mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} -e "desc ${DATABASE_NAME}.mensas" > /dev/null 2>&1; then
     echo "Creating database schema..."
     mysql -h${DATABASE_HOST} -P${DATABASE_PORT} -u${DATABASE_USER} -p${DATABASE_PASSWORD} ${DATABASE_NAME} < ${CREATE_DB_SQL}
 fi
+
 
 # wait for any bootstrap host to be available
 if [[ ! -z "${BOOTSTRAP}" ]]; then
@@ -54,7 +94,7 @@ if [[ ! -z "${BOOTSTRAP}" ]]; then
         fi
     done
 fi
-
+# prevent glob expansion in lib/*
 set -f
 LAUNCH_COMMAND='java -cp lib/* i5.las2peer.tools.L2pNodeLauncher -s service -p '"${LAS2PEER_PORT} ${SERVICE_EXTRA_ARGS}"
 if [[ ! -z "${BOOTSTRAP}" ]]; then
@@ -72,20 +112,19 @@ function selectMnemonic {
     else
         # note: zsh and others use 1-based indexing. this requires bash
         echo "${mnemonics[0]}"
-         
     fi
 }
 
 #prepare pastry properties
 echo external_address = $(curl -s https://ipinfo.io/ip):${LAS2PEER_PORT} > etc/pastry.properties
-echo  ${LAUNCH_COMMAND}
+echo ${LAUNCH_COMMAND}
 # start the service within a las2peer node
 if [[ -z "${@}" ]]
 then
     if [ -n "$LAS2PEER_ETH_HOST" ]; then
-        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED --ethereum-mnemonic "$(selectMnemonic)" uploadStartupDirectory startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector  "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()" 
+        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED --ethereum-mnemonic "$(selectMnemonic)"  startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\)   "node=getNodeAsEthereumNode()" "registry=node.getRegistryClient()" "n=getNodeAsEthereumNode()" "r=n.getRegistryClient()"
     else
-        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED  startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) startWebConnector
+        exec ${LAUNCH_COMMAND} --observer --node-id-seed $NODE_ID_SEED  startService\("'""${SERVICE}""'", "'""${SERVICE_PASSPHRASE}""'"\) 
     fi
 else
   exec ${LAUNCH_COMMAND} ${@}
