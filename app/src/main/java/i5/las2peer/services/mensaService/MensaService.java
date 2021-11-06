@@ -117,6 +117,14 @@ public class MensaService extends RESTService {
   public MensaService() {
     super();
     setFieldValues();
+      System.out.println(
+        "database credentials:" +
+        databaseHost +
+        databasePort +
+        databaseName +
+        databaseUser +
+        databasePassword
+      );
     this.databaseType = SQLDatabaseType.getSQLDatabaseType(databaseTypeInt);
 
     this.database =
@@ -130,14 +138,7 @@ public class MensaService extends RESTService {
       );
 
     try {
-      System.out.println(
-        "database credentials:" +
-        databaseHost +
-        databasePort +
-        databaseName +
-        databaseUser +
-        databasePassword
-      );
+    
       Connection con = database.getDataSource().getConnection();
       con.close();
       fetchMensas();
