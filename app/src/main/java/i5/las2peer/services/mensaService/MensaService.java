@@ -130,6 +130,14 @@ public class MensaService extends RESTService {
       );
 
     try {
+      System.out.println(
+        "database credentials:" +
+        databaseHost +
+        databasePort +
+        databaseName +
+        databaseUser +
+        databasePassword
+      );
       Connection con = database.getDataSource().getConnection();
       con.close();
       fetchMensas();
@@ -1900,7 +1908,7 @@ public class MensaService extends RESTService {
    * @param picture picture to be deleted
    * @return JSON encoded list of pictures.
    * @throws EnvelopeOperationFailedException could not delete envelope
-   * @throws EnvelopeAccessDeniedException no access allowed 
+   * @throws EnvelopeAccessDeniedException no access allowed
    */
   @DELETE
   @Path("/dishes/{dish}/pictures")
