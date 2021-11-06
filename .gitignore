@@ -28,3 +28,4 @@ etc/startup/*
 app/export/*
 app/log/*
 log/*
+app/.settings/org.eclipse.buildship.core.prefs
