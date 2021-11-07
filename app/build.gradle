@@ -5,6 +5,20 @@ plugins {
     //id 'eclipse' // only required when using Eclipse
 }
 
+sourceSets {
+    main {
+         java {
+            srcDir "$rootDir/lib"
+         }
+    }
+
+    test {
+        java {
+             srcDir "$rootDir/lib"
+        }
+    }
+}
+
 repositories {
     // Use JCenter for resolving dependencies.
     jcenter()

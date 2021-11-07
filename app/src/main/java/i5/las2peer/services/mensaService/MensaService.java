@@ -103,7 +103,7 @@ public class MensaService extends RESTService {
   private int databaseTypeInt = 1;
   private SQLDatabaseType databaseType;
   private String databaseHost="127.0.0.1";
-  private int databasePort="3306";
+  private int databasePort=3306;
   private String databaseUser="root";
   private String databasePassword="root";
   private SQLDatabase database; // The database instance to write to.
