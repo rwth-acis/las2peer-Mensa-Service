@@ -506,14 +506,7 @@ public class MensaService extends RESTService {
   ) {
     JSONArray mensaMenu;
     String returnString;
-    System.out.println(
-        "database credentials:" +
-        databaseHost +
-        databasePort +
-        databaseName +
-        databaseUser +
-        databasePassword
-      );
+    
 
     Context
       .get()
@@ -678,7 +671,7 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
-    System.out.println("Body " + body);
+   
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     String email = null;
     JSONObject context = null; //holds the context between the user and the bot
@@ -701,7 +694,7 @@ public class MensaService extends RESTService {
 
       context = getContext(email);
 
-      System.out.println("Context " + context);
+      // System.out.println("Context " + context);
       String lastStep = context.getAsString("intent");
       if (
         "number_selection".equals(intent) &&
