@@ -26,7 +26,7 @@ jobs:
     - name: Grant Gradle permissions
       run: chmod +x gradlew
     - run: ls etc
-    - run: cat /etc/i5.las2peer.services.mensaService.MensaService.properties
+    - run: cat etc/i5.las2peer.services.mensaService.MensaService.properties
     - name: Test with Gradle
       run: ./gradlew clean test --info 
   build:
