@@ -99,13 +99,13 @@ public class MensaService extends RESTService {
   private static HashMap<String, Object> ContextInfo = new HashMap<String, Object>();
   private final int maxEntries = 20;
 
-  private String databaseName="LAS2PEERMON";
+  private String databaseName;
   private int databaseTypeInt = 1;
   private SQLDatabaseType databaseType;
-  private String databaseHost="127.0.0.1";
-  private int databasePort="3306";
-  private String databaseUser="root";
-  private String databasePassword="root";
+  private String databaseHost;
+  private int databasePort;
+  private String databaseUser;
+  private String databasePassword;
   private SQLDatabase database; // The database instance to write to.
 
   private static final String ENVELOPE_PREFIX = "mensa-";
