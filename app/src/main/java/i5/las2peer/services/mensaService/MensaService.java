@@ -99,13 +99,13 @@ public class MensaService extends RESTService {
   private static HashMap<String, Object> ContextInfo = new HashMap<String, Object>();
   private final int maxEntries = 20;
 
-  private String databaseName;
+  private String databaseName="LAS2PEERMON";
   private int databaseTypeInt = 1;
   private SQLDatabaseType databaseType;
-  private String databaseHost;
-  private int databasePort;
-  private String databaseUser;
-  private String databasePassword;
+  private String databaseHost="127.0.0.1";
+  private int databasePort=3306;
+  private String databaseUser="root";
+  private String databasePassword="root";
   private SQLDatabase database; // The database instance to write to.
 
   private static final String ENVELOPE_PREFIX = "mensa-";
@@ -130,6 +130,7 @@ public class MensaService extends RESTService {
       );
 
     try {
+    
       Connection con = database.getDataSource().getConnection();
       con.close();
       fetchMensas();
@@ -505,6 +506,7 @@ public class MensaService extends RESTService {
   ) {
     JSONArray mensaMenu;
     String returnString;
+    
 
     Context
       .get()
@@ -669,7 +671,7 @@ public class MensaService extends RESTService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public Response prepareReview(String body) {
-    System.out.println("Body " + body);
+   
     JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
     String email = null;
     JSONObject context = null; //holds the context between the user and the bot
@@ -692,7 +694,7 @@ public class MensaService extends RESTService {
 
       context = getContext(email);
 
-      System.out.println("Context " + context);
+      // System.out.println("Context " + context);
       String lastStep = context.getAsString("intent");
       if (
         "number_selection".equals(intent) &&
@@ -1900,7 +1902,7 @@ public class MensaService extends RESTService {
    * @param picture picture to be deleted
    * @return JSON encoded list of pictures.
    * @throws EnvelopeOperationFailedException could not delete envelope
-   * @throws EnvelopeAccessDeniedException no access allowed 
+   * @throws EnvelopeAccessDeniedException no access allowed
    */
   @DELETE
   @Path("/dishes/{dish}/pictures")
