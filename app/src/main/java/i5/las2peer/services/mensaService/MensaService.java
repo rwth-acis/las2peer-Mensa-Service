@@ -280,7 +280,7 @@ public class MensaService extends RESTService {
     JSONObject monitorEvent41 = new JSONObject();
     JSONObject monitorEvent1 = new JSONObject();
 
-    System.out.println("Body: "+body);
+    // System.out.println("Body: "+body);
 
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
