@@ -280,6 +280,8 @@ public class MensaService extends RESTService {
     JSONObject monitorEvent41 = new JSONObject();
     JSONObject monitorEvent1 = new JSONObject();
 
+    // System.out.println("Body: "+body);
+
     try {
       JSONObject bodyJson = (JSONObject) p.parse(body);
       String email = bodyJson.getAsString("email");
@@ -340,7 +342,7 @@ public class MensaService extends RESTService {
           break;
       }
 
-      if (mensaName == null) {
+      if (mensaName == null && city==null) {
         mensaName = context.getAsString("default_mensa");
         if (mensaName == null) {
           throw new ChatException(
