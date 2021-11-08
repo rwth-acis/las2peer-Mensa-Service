@@ -342,7 +342,7 @@ public class MensaService extends RESTService {
           break;
       }
 
-      if (mensaName == null) {
+      if (mensaName == null && city==null) {
         mensaName = context.getAsString("default_mensa");
         if (mensaName == null) {
           throw new ChatException(
