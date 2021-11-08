@@ -20,6 +20,18 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.buildship.core.gradleprojectnature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>las2peer-Mensa-Service-lib</name>
+			<type>2</type>
+			<location>C:/Repositories/las2peer-Mensa-Service/lib</location>
+		</link>
+		<link>
+			<name>lib</name>
+			<type>2</type>
+			<location>C:/Repositories/las2peer-Mensa-Service/lib</location>
+		</link>
+	</linkedResources>
 	<filteredResources>
 		<filter>
 			<id>1636024855266</id>
