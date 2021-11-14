@@ -9,6 +9,7 @@ import i5.las2peer.p2p.LocalNodeManager;
 import i5.las2peer.security.UserAgentImpl;
 import i5.las2peer.testing.MockAgentFactory;
 import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -223,10 +224,14 @@ public class ServiceTest {
 
     
       // Try to get the menus
-      result = getBotMenu(client, json.toString());
-      //TODO go through message and see if it contains mensa acadmica and vita
+    result = getBotMenu(client, json.toString());
+    Assert.assertEquals(200, result.getHttpCode());
+    JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
 
-      Assert.assertEquals(200, result.getHttpCode());
+    String textResponse =((JSONObject) p.parse(result.getResponse())).getAsString("text");
+
+    Assert.assertEquals(true, textResponse.contains("Mensa Academica"));
+    Assert.assertEquals(true, textResponse.contains("Mensa Vita"));
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -430,8 +435,8 @@ public class ServiceTest {
       "POST",
       mainPath + "menu",
       bodyString,
-      "application/x-www-form-urlencoded",
-      MediaType.TEXT_HTML + ";charset=utf-8",
+      MediaType.TEXT_HTML,
+      MediaType.APPLICATION_JSON,
       new HashMap<String, String>()
     );
   }
