@@ -31,3 +31,4 @@ log/*
 app/.settings/org.eclipse.buildship.core.prefs
 app/.project
 .vscode/*
+app/.project
