@@ -8,6 +8,9 @@ import i5.las2peer.p2p.LocalNode;
 import i5.las2peer.p2p.LocalNodeManager;
 import i5.las2peer.security.UserAgentImpl;
 import i5.las2peer.testing.MockAgentFactory;
+import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -172,6 +175,64 @@ public class ServiceTest {
         // System.out.println("Result of 'mensaGibtEsNicht': " +
         // result.getResponse().trim());
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.toString());
+    }
+  }
+
+   /**
+   * Test emulates an incoming message from the bot manager to get the menu for mensa academica
+   */
+  @Test
+  public void testGetMenuForBot() {
+    try {
+      MiniClient client = getClient();
+      ClientResponse result;
+
+    JSONObject json = new JSONObject();
+    json.put("email", "example-email");
+    json.put("mensa", "Aachen, Mensa academica");
+    json.put("intent","menu");
+
+    
+      // Try to get the menus
+      result = getBotMenu(client, json.toString());
+
+      Assert.assertEquals(200, result.getHttpCode());
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.toString());
+    }
+  }
+
+  
+   /**
+   * Test emulates an incoming message from the bot manager to find mensas in Aachen
+   */
+  @Test
+  public void testGetMensasInCityForBot() {
+    try {
+      MiniClient client = getClient();
+      ClientResponse result;
+
+    JSONObject json = new JSONObject();
+    json.put("email", "example-email");
+    json.put("city", "Aachen");
+    json.put("intent","menu");
+
+    
+      // Try to get the menus
+    result = getBotMenu(client, json.toString());
+    Assert.assertEquals(200, result.getHttpCode());
+    JSONParser p = new JSONParser(JSONParser.MODE_PERMISSIVE);
+
+    String textResponse =((JSONObject) p.parse(result.getResponse())).getAsString("text");
+
+    Assert.assertEquals(true, textResponse.contains("Mensa Academica"));
+    Assert.assertEquals(true, textResponse.contains("Mensa Vita"));
+
     } catch (Exception e) {
       e.printStackTrace();
       Assert.fail(e.toString());
@@ -357,6 +418,26 @@ public class ServiceTest {
       "text/plain",
       MediaType.TEXT_HTML + ";charset=utf-8",
       header
+    );
+  }
+
+  /**
+   * call the bot function to get the menu for a mensa formatted as chat message
+   * @param client
+   * @param bodyString
+   * @return
+   */
+  private ClientResponse getBotMenu(
+    MiniClient client,
+    String bodyString
+  ){
+    return client.sendRequest(
+      "POST",
+      mainPath + "menu",
+      bodyString,
+      MediaType.TEXT_HTML,
+      MediaType.APPLICATION_JSON,
+      new HashMap<String, String>()
     );
   }
 
