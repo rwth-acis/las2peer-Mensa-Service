@@ -75,6 +75,7 @@ application {
 // put all .jar files into export/jars folder
 tasks.withType(Jar) {
     destinationDirectory = file("$projectDir/export/jars")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 javadoc {
@@ -104,6 +105,8 @@ task copyTest(type: Copy) {
     include "**/*.xml"
     into "$buildDir/classes/java/test"
 }
+
+
 
 // These two tasks restore the build and runtime environment used
 // in the ant environment
