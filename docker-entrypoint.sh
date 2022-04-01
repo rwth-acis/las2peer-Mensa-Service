@@ -15,7 +15,7 @@ export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' gradle.properties )
 export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties )
 
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
-export CREATE_DB_SQL='initdb.sql'
+export CREATE_DB_SQL='initDB.sql'
 
 # check mandatory variables
 [[ -z "${DATABASE_USER}" ]] && \
