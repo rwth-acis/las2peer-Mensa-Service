@@ -27,7 +27,7 @@ export CREATE_DB_SQL='initDB.sql'
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='mensa'
 [[ -z "${DATABASE_HOST}" ]] && export DATABASE_HOST='mysql'
 [[ -z "${DATABASE_PORT}" ]] && export DATABASE_PORT='3306'
-
+[[ -z "${DATABASE_NAME}" ]] && export DATABASE_PORT='LAS2PEERMON'
 
 # set defaults for optional web connector parameters
 [[ -z "${START_HTTP}" ]] && export START_HTTP='TRUE'
