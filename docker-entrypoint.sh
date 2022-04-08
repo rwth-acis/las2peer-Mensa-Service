@@ -15,7 +15,7 @@ export SERVICE_NAME=$(awk -F "=" '/service.name/ {print $2}' gradle.properties )
 export SERVICE_CLASS=$(awk -F "=" '/service.class/ {print $2}' gradle.properties )
 
 export SERVICE=${SERVICE_NAME}.${SERVICE_CLASS}@${SERVICE_VERSION}
-export CREATE_DB_SQL='initdb.sql'
+export CREATE_DB_SQL='initDB.sql'
 
 # check mandatory variables
 [[ -z "${DATABASE_USER}" ]] && \
@@ -27,7 +27,7 @@ export CREATE_DB_SQL='initdb.sql'
 [[ -z "${SERVICE_PASSPHRASE}" ]] && export SERVICE_PASSPHRASE='mensa'
 [[ -z "${DATABASE_HOST}" ]] && export DATABASE_HOST='mysql'
 [[ -z "${DATABASE_PORT}" ]] && export DATABASE_PORT='3306'
-
+[[ -z "${DATABASE_NAME}" ]] && export DATABASE_PORT='LAS2PEERMON'
 
 # set defaults for optional web connector parameters
 [[ -z "${START_HTTP}" ]] && export START_HTTP='TRUE'
