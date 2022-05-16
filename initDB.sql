@@ -1,3 +1,4 @@
+USE LAS2PEERMON;
 /*Initializes the table for mensas*/
 CREATE TABLE IF NOT EXISTS `mensas`
 (
