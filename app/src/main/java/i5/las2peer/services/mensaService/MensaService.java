@@ -1711,7 +1711,7 @@ public class MensaService extends RESTService {
     JSONObject response = (JSONObject) jsonParser.parse(con.getInputStream());
     return !(Boolean) response.get("closed");}
     catch(SocketTimeoutException e){
-      throw new IOException("The OpenMensa API cannot be reached")
+      throw new IOException("The OpenMensa API cannot be reached");
     }
 
   }
