@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.sql.Connection;
@@ -1692,24 +1693,27 @@ public class MensaService extends RESTService {
   }
 
   private boolean MensaIsOpen(int mensaID, String date)
-    throws MalformedURLException, ParseException {
+      throws MalformedURLException, ParseException, IOException {
     JSONParser jsonParser = new JSONParser(JSONParser.MODE_PERMISSIVE);
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     if (date == null) {
       date = dateFormat.format(new Date());
     }
-    String urlString =
-      OPEN_MENSA_API_ENDPOINT + "/canteens/" + mensaID + "/days/" + date;
+    String urlString = OPEN_MENSA_API_ENDPOINT + "/canteens/" + mensaID + "/days/" + date;
 
     URL url = new URL(urlString);
-    try {
-      URLConnection con = url.openConnection();
-      con.addRequestProperty("Content-type", "application/json");
-      JSONObject response = (JSONObject) jsonParser.parse(con.getInputStream());
-      return !(Boolean) response.get("closed");
-    } catch (IOException e) {
-      return false;
+
+    try{
+    URLConnection con = url.openConnection();
+    con.setConnectTimeout(30000); // timeout after 30 seconds
+    con.setReadTimeout(60000); // timeout after 60 seconds
+    con.addRequestProperty("Content-type", "application/json");
+    JSONObject response = (JSONObject) jsonParser.parse(con.getInputStream());
+    return !(Boolean) response.get("closed");}
+    catch(SocketTimeoutException e){
+      throw new IOException("The OpenMensa API cannot be reached");
     }
+
   }
 
   // hard coded IDs of mensas in Aachen
