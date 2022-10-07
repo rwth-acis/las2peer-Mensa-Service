@@ -1,0 +1,40 @@
+version: "3.9"  # optional since v1.27.0
+services:
+  mysql:
+    platform: linux/amd64
+    image: "mysql:5.7"
+    restart: always
+    volumes:
+      - mysqlvolume:/var/lib/mysql
+      - ./mysql-init-files:/initDB.sql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - backend
+
+  mensa:
+    platform: linux/amd64
+    build: .
+    depends_on :
+      - mysql
+    ports:
+      - "8080:8080"
+      - "9011:9011"
+    environment:
+      - LAS2PEER_PORT=9011
+      # - MYSQL_PASSWORD=root
+      - DATABASE_NAME=LAS2PEERMON
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_PASSWORD=root
+      - DATABASE_USER=root
+    hostname: mensa
+    networks:
+      - backend
+
+volumes:
+  mysqlvolume: {}
+
+networks:
+  backend:
+    driver: bridge
