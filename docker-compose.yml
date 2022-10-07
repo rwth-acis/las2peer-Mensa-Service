@@ -29,6 +29,7 @@ services:
       - DATABASE_PORT=3306
       - DATABASE_PASSWORD=root
       - DATABASE_USER=root
+      - SERVICE_EXTRA_ARGS=startWebConnector
     hostname: mensa
     networks:
       - backend
