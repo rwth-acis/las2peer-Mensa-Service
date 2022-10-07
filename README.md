@@ -13,39 +13,45 @@
 
 A simple RESTful service for retrieving the current menu of a canteen of the RWTH Aachen University. The service is based on [las2peer](https://github.com/rwth-acis/LAS2peer).
 
-## Configuration
+Run the following command to start the service:
 
-### MySQL
-The mensa service requires a MySQL database to store dishes and ratings. Make sure that you have a running MySQL server. You can also use a docker image 
-```bash
-docker run -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -d mysql
+```sh
+ docker compose -f "docker-compose.yml" up -d --build
 ```
 
-First configure the `\etc\i5.las2peer.services.mensaService.MensaService.properties` file with your database setup.
+Now visit `localhost:8080`. You should see the las2peer node frontend. Navigate to `localhost:8080/mensa/187` to see the menu for the mensa Academica in Aachen for the current day (might be closed).
 
-|variable | default |
-|---|---|
-|databaseUser | root |  
-|databasePassword | password |  
-|databaseName | LAS2PEERMON |
-|databaseHost | 127.0.0.1 |
-|databasePort | 3306|
+## Configuration
+For development purposes, you might consider running the service without using Docker. You can also build and run the service using Gradle and Java.
+
+### MySQL
+
+The mensa service requires a MySQL database to store dishes and ratings. Make sure that you have a running MySQL server with the required database tables. The `mysql-init-files\initDB.sql` script can be used to initialize the database.
+
+Now configure the `\etc\i5.las2peer.services.mensaService.MensaService.properties` file with your database setup.
+
+| variable         | default     |
+| ---------------- | ----------- |
+| databaseUser     | root        |
+| databasePassword | password    |
+| databaseName     | LAS2PEERMON |
+| databaseHost     | 127.0.0.1   |
+| databasePort     | 3306        |
 
 with the credentials to your database
 
-If you are building the service for the first time, make sure to run the sql script `initDB.sql` on your database. This initializes the tables needed by the MensaService.
+### Gradle
 
-## Build
+Make sure you have Gradle 7.3 and Java 17 installed.
 
 Execute the following command on your shell:
 
-```shell
+```sh
 gradle build
 ```
 
 ## Start
-
-To start the Mensa Service, use one of the available start scripts:
+The build step generated shell scripts in `bin`. To start the Mensa Service, use one of the available start scripts:
 
 Windows:
 
