@@ -15,29 +15,32 @@ A simple RESTful service for retrieving the current menu of a canteen of the RWT
 
 ## Configuration
 
+### MySQL
+The mensa service requires a MySQL database to store dishes and ratings. Make sure that you have a running MySQL server. You can also use a docker image 
+```bash
+docker run -e MYSQL_ROOT_PASSWORD=password -p 3306:3306 -d mysql
+```
+
 First configure the `\etc\i5.las2peer.services.mensaService.MensaService.properties` file with your database setup.
 
-Make sure you run the sql script `src\main\i5\las2peer\services\mensaService\database\initDB.sql` on your database. This script initializes the tables needed by the MensaService.
-
-### First time building
-
-If you are building the serrive for the first time, you need to set up a MySQL database. On this database you need to run the `etc\databaseInit.sql` script. 
-Adjust the properties file `etc\i5.las2peer.services.mensaService.MensaService.properties`
 |variable | default |
 |---|---|
 |databaseUser | root |  
-|databasePassword | root-password |  
+|databasePassword | password |  
 |databaseName | LAS2PEERMON |
 |databaseHost | 127.0.0.1 |
 |databasePort | 3306|
 
 with the credentials to your database
+
+If you are building the service for the first time, make sure to run the sql script `initDB.sql` on your database. This initializes the tables needed by the MensaService.
+
 ## Build
 
 Execute the following command on your shell:
 
 ```shell
-ant all
+gradle build
 ```
 
 ## Start
