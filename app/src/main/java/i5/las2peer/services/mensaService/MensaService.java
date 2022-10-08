@@ -432,6 +432,7 @@ public class MensaService extends RESTService {
    */
   @GET
   @Path("/find")
+  @Produces(MediaType.APPLICATION_JSON)
   @ApiOperation(
     value = "Get a list of mensas supported by the service. The list is identical to the the one provided by the openmensa api. ",
     notes = "Unlike the OpenMensa Api you can provide a city as query parameter to get all mensas in that city"
