@@ -1,3 +1,5 @@
+-- create db if non existant
+CREATE DATABASE IF NOT EXISTS LAS2PEERMON;
 USE LAS2PEERMON;
 /*Initializes the table for mensas*/
 CREATE TABLE IF NOT EXISTS `mensas`
