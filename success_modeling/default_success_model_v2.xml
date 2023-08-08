@@ -1,0 +1,109 @@
+<SuccessModel name="mensa" service="i5.las2peer.services.mensaService.MensaService">
+    <surveys>
+        <survey name="mensa: Personalization of the MensaBot (2022-05-22T22:00:00.000Z) " qid="32" type="mobSOS" id="72"/>
+        <survey name="mensa: Perceived quality and usefulness of the MensaBots information (2022-05-22T22:00:00.000Z) " qid="31" type="mobSOS" id="73"/>
+        <survey name="mensa: Time savings due to the MensaBot  (2022-05-22T22:00:00.000Z) " qid="33" type="mobSOS" id="74"/>
+        <survey name="mensa: System Usabilty Scale of the MensaBot (2022-05-23T22:00:00.000Z) " qid="34" type="mobSOS" id="75"/>
+    </surveys>
+    <reqbaz-project name="Mensa Community" id="404" categoryId="775"/>
+    <dimension name="System Quality">
+        <factor name="Usability">
+            <measure name="System Usabilty Scale of the MensaBot Global Score"/>
+        </factor>
+        <factor name="Error Rate &amp; Reliability">
+            <measure name="Number of unsuccessful menu requests of the last week"/>
+            <measure name="Number of unsuccessfull menu retrievals"/>
+            <measure name="Number of unhandled exceptions"/>
+            <measure name="Successful Service Requests Ratio"/>
+        </factor>
+        <factor name="Service Responsiveness">
+            <measure name="Average process time of not-service-related answers"/>
+            <measure name="Average process time of a menu request in the last 24 hours"/>
+            <measure name="Average process time of the last 24 hours"/>
+            <measure name="Average process time grouped by request "/>
+            <measure name="Average process time of a menu request of the last 5 days"/>
+            <measure name="Average processing time of the last 5 days"/>
+            <measure name="Avergae time to process a request"/>
+        </factor>
+    </dimension>
+    <dimension name="Information Quality">
+        <factor name="Perceived Quality">
+            <measure name="Perceived quality and usefulness of the MensaBots information Global Score"/>
+            <measure name=" q1 - The information received is up to date"/>
+            <measure name="q2 - The information is outdated."/>
+            <measure name="q3 - The information received is reliable."/>
+            <measure name="q4 - The information is useless or unreliable."/>
+            <measure name="q5 - I receive appropriate information for my request."/>
+            <measure name="q6 - The information received does not meet my requirements."/>
+            <measure name=" q7 - I knew immediately what information the chatbot provides."/>
+            <measure name="q8 - I have not intuitively understood what information I can get from the bot."/>
+        </factor>
+        <factor name="Personalization">
+            <measure name="Personalization of the MensaBot Global Score"/>
+            <measure name=" q0 - I can customize the bot to my needs."/>
+            <measure name=" q1 - The bot lacks the possibility for proper personalization."/>
+            <measure name="q2 - I think the options for personalization are enough."/>
+            <measure name="q3 - The opportunity for personalization is still not satisfied."/>
+        </factor>
+        <factor name="Completeness">
+            <measure name="Total number of supported canteens"/>
+        </factor>
+    </dimension>
+    <dimension name="Use">
+        <factor name="Nature of use">
+            <measure name="Favourite hours of the last year"/>
+            <measure name="Favourite days of the last year"/>
+            <measure name="Menu requests of the last 24 hours"/>
+            <measure name="Requests to rate a dish"/>
+            <measure name="Requests of the rating of a dish "/>
+        </factor>
+        <factor name="Menu requests">
+            <measure name="Menu requests of the last 24 hours"/>
+            <measure name="Menu requests of the last 7 days"/>
+            <measure name="Menu requestes of the last 2 month"/>
+            <measure name="Menu requests in every month of the last year "/>
+            <measure name="Requests for the menu over time"/>
+            <measure name="Menu requests (new format)"/>
+        </factor>
+        <factor name="Users">
+            <measure name="Number of users of the last month"/>
+            <measure name="Number of users of the last months"/>
+            <measure name="Total number of users"/>
+            <measure name="Users of the last month"/>
+            <measure name="Number of users over the last 7 days"/>
+            <measure name="Number of Users in the last 24 hours"/>
+            <measure name="User interactions over time"/>
+            <measure name="Top reviewers"/>
+            <measure name="Time spent on chat interactions per user"/>
+        </factor>
+    </dimension>
+    <dimension name="User Satisfaction">
+        <factor name="Repeat visits">
+            <measure name="Repeat visitors from this month"/>
+        </factor>
+    </dimension>
+    <dimension name="Individual Impact">
+        <factor name="Time Savings">
+            <measure name="Time savings due to the MensaBot  Global Score"/>
+            <measure name="q1 - By using the bot, I get information quickly."/>
+            <measure name="q2 - It takes a long time to get the information I need through the bot."/>
+            <measure name="q3 - Compared to the alternatives I know; the bot is faster than them."/>
+            <measure name="q4 - Using the bot takes longer than my previous approach."/>
+            <measure name="q5 - With regular use of the bot, I would save time compared to now. "/>
+            <measure name="q6 - Using the bot does not save me any time or even makes it take longer."/>
+            <measure name="q7 - The bot answers quickly."/>
+            <measure name="q8 - The bot takes a long time to give me an adequate answer."/>
+        </factor>
+        <factor name="Net Benefits">
+            <measure name="Best dish categories for Mensa Academica"/>
+            <measure name="Top rated canteens"/>
+            <measure name="Most visited canteens"/>
+        </factor>
+    </dimension>
+    <dimension name="Community Impact">
+        <factor name="Interface use">
+            <measure name="Ratio of community application requests"/>
+            <measure name="Ratio of chat requests"/>
+        </factor>
+    </dimension>
+</SuccessModel>
