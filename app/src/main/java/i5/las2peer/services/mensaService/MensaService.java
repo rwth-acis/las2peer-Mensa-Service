@@ -740,7 +740,7 @@ public class MensaService extends RESTService {
           if (mensaName == null) {
             mensa = (JSONObject) context.get("selected_mensa"); //check if selected mensa has been set before in getMenu
             if (mensa == null) throw new ChatException(
-              "I could not determine the mensa, you visited 🙁. Could you please repeat that? 😇"
+                  "I could not determine the mensa, you visited 🙁. Could you please repeat that? 😇", false
             );
             mensaName = mensa.getAsString("name");
           }
@@ -751,7 +751,7 @@ public class MensaService extends RESTService {
         if (dish == null) {
           if (category == null) {
             throw new ChatException(
-              "I could not determine the category of your dish 🙁. Could you please repeat that? 😇"
+                "I could not determine the category of your dish 🙁. Could you please repeat that? 😇", false
             );
           }
           dish =
