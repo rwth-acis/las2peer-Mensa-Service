@@ -1,0 +1,1861 @@
+<Catalog>
+    <measure name="Number of measured events in a day" tags="" type="success">
+        <description/>
+        <query name="">SELECT TIME_FORMAT(TIME_STAMP, '%h %p') as 'time of the day' ,count(MESSAGE.REMARKS) as 'measured events' FROM SERVICE LEFT JOIN REGISTERED_AT ON SERVICE.AGENT_ID = REGISTERED_AT.AGENT_ID JOIN MESSAGE on SOURCE_AGENT=SERVICE.AGENT_ID where SERVICE_PATH="sensorProxy" and EVENT like "%custom%" group by TIME_FORMAT(TIME_STAMP, '%h %p')</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Number of measured events in a day</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Measured mood of participants during the day" tags="" type="success">
+        <description/>
+        <query name="">select TIME_FORMAT(TIME_STAMP, '%h:%i %p') as time, AVG(JSON_EXTRACT(REMARKS,"$.rawMeasurement[1].r")) as 'measured mood' from MESSAGE where EVENT= "SERVICE_CUSTOM_MESSAGE_2" AND REMARKS-&gt;&gt;"$.rawMeasurement" is not null group by time</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Average mood over time</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Measure name Number of bots" tags="" type="success">
+        <description/>
+        <query name="">select TIME_FORMAT(TIME_STAMP, '%h:%i %p') as time, AVG(JSON_EXTRACT(REMARKS,"$.rawMeasurement[1].r")) as 'measured mood' from MESSAGE where EVENT= "SERVICE_CUSTOM_MESSAGE_2" AND REMARKS-&gt;&gt;"$.rawMeasurement" is not null group by time</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Average mood over time</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Distribution of measurents containing user feedback on their mood" tags="" type="success">
+        <description/>
+        <query name="">select feedback, count(*) from (SELECT CASE WHEN JSON_LENGTH(REMARKS-&gt;&gt;'$.moodEvaluation')&gt;0 THEN 'feedback' ELSE 'no feedback' END AS feedback, REMARKS-&gt;&gt;"$.userID" FROM MESSAGE where REMARKS-&gt;&gt;"$.rawMeasurement" is not null ) as t group by feedback;</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Average mood over time</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Number of users taking measurements in the past 24 hours" tags="" type="success">
+        <description/>
+        <query name="">select count(distinct REMARKS-&gt;&gt;"$.userID") as 'Number of active users' from MESSAGE where timediff(current_time(),TIME(TIME_STAMP))&lt;'24:00:00' AND EVENT like "%SERVICE_CUSTOM_MESSAGE_%" AND REMARKS-&gt;&gt;"$.rawMeasurement" is not null</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Number of users taking part in the current study" tags="" type="success">
+        <description/>
+        <query name="">select count(distinct REMARKS-&gt;&gt;"$.userID") as 'number of users' from MESSAGE where EVENT like "%SERVICE_CUSTOM_MESSAGE_%" AND REMARKS-&gt;&gt;"$.rawMeasurement" is not null</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Number of users in the past 24 hours" tags="" type="success">
+        <description/>
+        <query name="">SELECT count(distinct REMARKS-&gt;&gt;"$.actor.account.name") as user FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_96" and timediff(current_time(),TIME(TIME_STAMP))&lt;'24:00:00'</query>
+        <visualization type="Value">
+            <unit>users</unit>
+        </visualization>
+    </measure>
+    <measure name="Busiest day" tags="" type="success">
+        <description/>
+        <query name="">select concat('On ' ,date, ' a total of ',users, ' users used the service') from(SELECT DATE(TIME_STAMP) as date,count(distinct REMARKS-&gt;&gt;"$.actor.account.name") as users FROM MESSAGE where REMARKS-&gt;&gt;"$.verb.id" like "%compared_words%" AND EVENT ="SERVICE_CUSTOM_MESSAGE_96" group by date order by users desc ) as t limit 1</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Number of users doing the association task per day" tags="" type="success">
+        <description/>
+        <query name="">SELECT TIME_STAMP as date,count(distinct REMARKS-&gt;&gt;"$.actor.account.name") as 'number of users' FROM MESSAGE where REMARKS-&gt;&gt;"$.verb.id" like "%compared_words%" AND EVENT ="SERVICE_CUSTOM_MESSAGE_96" group by date(TIME_STAMP)</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Number of users doing association</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Top 5 topics" tags="" type="success">
+        <description/>
+        <query name="">SELECT REMARKS-&gt;&gt;'$.object.definition.description."en-US"' as topic , count(*) FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_96" AND REMARKS-&gt;&gt;"$.verb.id" like "%compared_words%" group by topic order by count(topic) desc limit 5</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Number of users doing association</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Distribution of scores for association task" tags="" type="success">
+        <description/>
+        <query name="">select concat('Acheived score : ',score, '/5') as score, n from (SELECT REMARKS-&gt;&gt;'$.context.extensions."https://tech4comp.de/xapi/context/extensions/filecontent".score' as score , count(*) as n FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_96" AND REMARKS-&gt;&gt;"$.verb.id" like "%compared_words%" group by score) as t </query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Distribution of scores for association task</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Average number of submissions per task" tags="" type="success">
+        <description>This shows the top 5 submissions per task</description>
+        <query name="">SELECT REMARKS-&gt;&gt;'$.object.definition.name."en-US"' as task, count(*) as n FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_33" and REMARKS-&gt;&gt;"$.verb.id" like "%sent_file%" group by task order by n desc limit 5</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Most handed in task" tags="" type="success">
+        <description/>
+        <query name="">select concat(task,' is the most submitted task, with ',n ,' submissions') from (SELECT REMARKS-&gt;&gt;'$.object.definition.name."en-US"' as task ,count(*) as n FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_33" and REMARKS-&gt;&gt;"$.verb.id" like "%sent_file%" group by task order by n desc) as q limit 1 </query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Time of task submissions" tags="" type="success">
+        <description/>
+        <query name="">SELECT TIME_FORMAT(TIME_STAMP, '%H:00-%H:59') as time ,count(*) as n FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_33" and REMARKS-&gt;&gt;"$.verb.id" like "%sent_file%" group by time order by time </query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>chartNode</nodeId>
+            <title>Time of task submissions</title>
+            <height>300</height>
+            <width>300</width>
+        </visualization>
+    </measure>
+    <measure name="Number of active students" tags="" type="success">
+        <description/>
+        <query name="">SELECT count( distinct REMARKS-&gt;&gt;'$.actor.account.name') as n FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_33" AND timediff(current_time(),TIME(TIME_STAMP))&lt;'24:00:00' and REMARKS-&gt;&gt;"$.verb.id" like "%sent_file%" </query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Submissions over time" tags="" type="success">
+        <description/>
+        <query name="">SELECT TIME_STAMP as date, count(*) FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_33" and REMARKS-&gt;&gt;"$.verb.id" like "%sent_file%" group by date(date) </query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Total number of supported canteens" tags="" type="success">
+        <description/>
+        <query name="">SELECT count(distinct(name)) FROM mensas</query>
+        <visualization type="Value">
+            <unit>canteens</unit>
+        </visualization>
+    </measure>
+    <measure name="Time spent on chat interactions per week (per user)" tags="" type="success">
+        <description/>
+        <query name="timeSpent">                       SELECT sum(time),email FROM(                SELECT REMARKS-&gt;"$.time" as time, REMARKS-&gt;"$.email" as email FROM LAS2PEERMON.MESSAGE                 WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_41' AND SOURCE_AGENT = '$SERVICE$'                 GROUP BY REMARKS-&gt;"$.email", WEEK(time_stamp)            ) as T        </query>
+        <visualization type="Value">
+            <unit>undefined</unit>
+        </visualization>
+    </measure>
+    <measure name="Process durations over time" tags="" type="success">
+        <description>This chart shows how long it has taken for certain requests to finish (in seconds) over time. Values over 50s are taken out.</description>
+        <query name="">SELECT TIME_STAMP AS time, CONVERT(SUBSTRING_INDEX(REMARKS-&gt;&gt;"$.duration",'-',-1),UNSIGNED INTEGER)/1000  as duration FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_40" and CONVERT(SUBSTRING_INDEX(REMARKS-&gt;&gt;"$.duration",'-',-1),UNSIGNED INTEGER) &gt;0 and CONVERT(SUBSTRING_INDEX(REMARKS-&gt;&gt;"$.duration",'-',-1),UNSIGNED INTEGER) &lt; 50000 </query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Top rated canteens" tags="" type="success">
+        <description>This measure shows the best average rated food</description>
+        <query name="">SELECT mensas.name as name, avg(stars) as 'average stars' FROM mensas JOIN reviews ON mensas.id = reviews.mensaId WHERE mensas.city = "Aachen" GROUP BY mensas.name order by avg(stars) desc limit 5</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Best dish categories for Mensa Academica" tags="" type="success">
+        <description>This measure describes which categories of dishes are best rated at Aachen, Mensa Academica</description>
+        <query name="">SELECT category, avg(stars) as 'average stars' FROM mensas JOIN reviews ON mensas.id = reviews.mensaId JOIN dishes ON dishes.id = reviews.dishId WHERE mensas.name= "Aachen, Mensa Academica" GROUP BY category order by avg(stars) desc limit 5</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Top reviewers" tags="" type="success">
+        <description>This measure shows the users which submitted the most reviews. One bar shows the reviews with comment and the other one those without</description>
+        <query name="">SELECT   author,   count(case when comment is null then 1 else null end) as 'without comment',  count(case when comment is not null then 1 else null end) as 'with comment'FROM reviews GROUP BY author order by count(*) desc limit 5</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Time spent on chat interactions per user" tags="" type="success">
+        <description/>
+        <query name="timeSpent">SELECT REMARKS-&gt;&gt;"$.email" as email , sum(REMARKS-&gt;&gt;"$.time") as time FROM MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_41' AND REMARKS-&gt;&gt;"$.email" &lt;&gt;"null" GROUP BY email ORDER BY time DESC LIMIT 10</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="User interactions over time" tags="" type="success">
+        <description/>
+        <query name="">SELECT Date(TIME_STAMP), count(*) as 'number of requests' FROM MESSAGE WHERE JSON_EXTRACT(REMARKS,"$.botName") like "%Mensa%" GROUP BY Date(TIME_STAMP)</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Requests for the menu over time" tags="" type="success">
+        <description>This measure shows how many requests to get the menu were made per day</description>
+        <query name="">SELECT date(TIME_STAMP) as date, count(*) as "requests" FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_10" group by date</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Menu requests (new format)" tags="" type="success">
+        <description>Requests made per day but with the new format containing information about the canteen which is queried.</description>
+        <query name="">SELECT date(TIME_STAMP) as date, count(1) as "requests" FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND JSON_CONTAINS_PATH(REMARKS,'one', "$.mensaName") group by date</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Number of bots" tags="" type="success">
+        <description/>
+        <query name="">select count(distinct REMARKS-&gt;&gt;"$.botName") as n FROM MESSAGE where EVENT="SERVICE_CUSTOM_MESSAGE_80"</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Avergae time to process a request" tags="" type="success">
+        <description/>
+        <query name="">SELECT ROUND(AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000, 4) as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40'  </query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Avergae process time grouped by request " tags="" type="success">
+        <description/>
+        <query name="">SELECT REMARKS-&gt;"$.url" as url , AVG(REMARKS-&gt;"$.duration") as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND REMARKS-&gt;"$.duration"&lt;300 AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 2 DAY) GROUP BY  REMARKS-&gt;"$.url" </query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Successful Service Requests Ratio" tags="" type="success">
+        <description/>
+        <query name="MessageReceived">        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$'        </query>
+        <query name="SuccessResponses">        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'RESPONSE_SENDING'  AND SOURCE_AGENT = '$SERVICE$'        </query>
+        <visualization type="KPI">
+            <expression>SuccessResponses / MessageReceived </expression>
+        </visualization>
+    </measure>
+    <measure name="Number of unhandled exceptions" tags="" type="success">
+        <description/>
+        <query name="exceptionCount">SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE                      WHERE EVENT = 'SERVICE_CUSTOM_ERROR_1'         </query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Number of unsuccessfull menu retrievals" tags="" type="success">
+        <description/>
+        <query name="menuRetrieveFailures">                   SELECT COUNT(*) FROM                    LAS2PEERMON.MESSAGE                     WHERE EVENT = 'SERVICE_CUSTOM_ERROR_2'         </query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Ratio of chat requests" tags="" type="success">
+        <description/>
+        <query name="BotRequest">        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$' AND REMARKS-&gt;"$.msg" like "Botaction"        </query>
+        <query name="AllRequests">        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'  AND SOURCE_AGENT = '$SERVICE$'        </query>
+        <visualization type="KPI">
+            <expression>BotRequest / AllRequests </expression>
+        </visualization>
+    </measure>
+    <measure name="Ratio of community application requests" tags="" type="success">
+        <description/>
+        <query name="BotRequest">        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED' AND SOURCE_AGENT = '$SERVICE$' AND REMARKS-&gt;"$.msg" like "Botaction"        </query>
+        <query name="AllRequests">        SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'MESSAGE_RECEIVED'  AND SOURCE_AGENT = '$SERVICE$'        </query>
+        <visualization type="KPI">
+            <expression>BotRequest / AllRequests </expression>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Sind Sie ein Student?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Yes',  'No') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.1.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa (de): Sind Sie ein Student?</nodeId>
+            <title>Mensa (de): Sind Sie ein Student?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Womit identifizieren Sie sich?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Weiblich',  'Männlich') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.1.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa (de): Womit identifizieren Sie sich?</nodeId>
+            <title>Mensa (de): Womit identifizieren Sie sich?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Sind Sie Vegetarier (oder Veganer)?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Ja',  'Nein') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.1.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa (de): Sind Sie Vegetarier (oder Veganer)?</nodeId>
+            <title>Mensa (de): Sind Sie Vegetarier (oder Veganer)?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Haben Sie die Mensa während des To-Go-Betriebs genutzt?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Ja',  'Nein') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.2.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa (de): Haben Sie die Mensa während des To-Go-Betriebs genutzt?</nodeId>
+            <title>Mensa (de): Haben Sie die Mensa während des To-Go-Betriebs genutzt?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Wenn ja, waren Sie mit dem Essen in der Mensa während des To-Go-Betriebs zufrieden?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.2.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa (de): Wenn ja, waren Sie mit dem Essen in der Mensa während des To-Go-Betriebs zufrieden?</nodeId>
+            <title>Mensa (de): Wenn ja, waren Sie mit dem Essen in der Mensa während des To-Go-Betriebs zufrieden?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Sind Sie froh, dass Sie wieder in der Mensa essen können? (3 bedeutet gleichgültig)" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.2.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa (de): Sind Sie froh, dass Sie wieder in der Mensa essen können? (3 bedeutet gleichgültig)</nodeId>
+            <title>Mensa (de): Sind Sie froh, dass Sie wieder in der Mensa essen können? (3 bedeutet gleichgültig)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Sind Sie der Meinung, dass die COVID-19 Schutzmaßnahmen in der Mensa eingehalten werden?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.2.4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa (de): Sind Sie der Meinung, dass die COVID-19 Schutzmaßnahmen in der Mensa eingehalten werden?</nodeId>
+            <title>Mensa (de): Sind Sie der Meinung, dass die COVID-19 Schutzmaßnahmen in der Mensa eingehalten werden?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Wie zufrieden sind Sie mit dem Essen in der Mensa?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.3.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa (de): Wie zufrieden sind Sie mit dem Essen in der Mensa?</nodeId>
+            <title>Mensa (de): Wie zufrieden sind Sie mit dem Essen in der Mensa?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Wie zufrieden sind Sie mit dem Preis-Leistungs-Verhältnis des Essens, das Sie in der Mensa kaufen?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.3.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa (de): Wie zufrieden sind Sie mit dem Preis-Leistungs-Verhältnis des Essens, das Sie in der Mensa kaufen?</nodeId>
+            <title>Mensa (de): Wie zufrieden sind Sie mit dem Preis-Leistungs-Verhältnis des Essens, das Sie in der Mensa kaufen?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Wie zufrieden sind Sie mit den Abläufen beim Kauf Ihres Essens in der Mensa? (z.B. Wartezeit in der Schlange, Zahlungsmöglichkeiten, Verhalten des Personals, ...)" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.3.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa (de): Wie zufrieden sind Sie mit den Abläufen beim Kauf Ihres Essens in der Mensa? (z.B. Wartezeit in der Schlange, Zahlungsmöglichkeiten, Verhalten des Personals, ...)</nodeId>
+            <title>Mensa (de): Wie zufrieden sind Sie mit den Abläufen beim Kauf Ihres Essens in der Mensa? (z.B. Wartezeit in der Schlange, Zahlungsmöglichkeiten, Verhalten des Personals, ...)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Wären Sie bereit, den MensaBot zu benutzen?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Ja',  'Nein') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.4.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa (de): Wären Sie bereit, den MensaBot zu benutzen?</nodeId>
+            <title>Mensa (de): Wären Sie bereit, den MensaBot zu benutzen?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Duration of visualization request" tags="" type="success">
+        <description>How long does it take on average to visualise a query</description>
+        <query name="">SELECT AVG(REMARKS-&gt;&gt;"$.duration") as average FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_19" AND SOURCE_AGENT IN $SERVICES$ </query>
+        <visualization type="Value">
+            <unit>ms</unit>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I think that I would like to use mensa frequently." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I think that I would like to use mensa frequently.</nodeId>
+            <title>SUS - System Usability Scale: I think that I would like to use mensa frequently.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I found mensa unnecessarily complex." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I found mensa unnecessarily complex.</nodeId>
+            <title>SUS - System Usability Scale: I found mensa unnecessarily complex.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I thought mensa was easy to use." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I thought mensa was easy to use.</nodeId>
+            <title>SUS - System Usability Scale: I thought mensa was easy to use.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I think that I would need the support of a technical person to be able to use mensa." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I think that I would need the support of a technical person to be able to use mensa.</nodeId>
+            <title>SUS - System Usability Scale: I think that I would need the support of a technical person to be able to use mensa.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I found the various functions in mensa were well integrated." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I found the various functions in mensa were well integrated.</nodeId>
+            <title>SUS - System Usability Scale: I found the various functions in mensa were well integrated.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I thought there was too much inconsistency in mensa." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.6" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I thought there was too much inconsistency in mensa.</nodeId>
+            <title>SUS - System Usability Scale: I thought there was too much inconsistency in mensa.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I would imagine that most people would learn to use mensa very quickly." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.7" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I would imagine that most people would learn to use mensa very quickly.</nodeId>
+            <title>SUS - System Usability Scale: I would imagine that most people would learn to use mensa very quickly.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I found mensa very awkward to use." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.8" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I found mensa very awkward to use.</nodeId>
+            <title>SUS - System Usability Scale: I found mensa very awkward to use.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I felt very confident using mensa." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.9" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I felt very confident using mensa.</nodeId>
+            <title>SUS - System Usability Scale: I felt very confident using mensa.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale: I needed to learn a lot of things before I could get going with mensa." tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='44' AND qkey = "SUS.10" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>SUS - System Usability Scale: I needed to learn a lot of things before I could get going with mensa.</nodeId>
+            <title>SUS - System Usability Scale: I needed to learn a lot of things before I could get going with mensa.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Menu requests of the last 7 days" tags="" type="success">
+        <description>Menu requests of the last 7 days</description>
+        <query name="">SELECT DATE(TIME_STAMP) as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 7 DAY) GROUP BY date ORDER BY date ASC</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Menu requests" tags="" type="success">
+        <description>Menu requests of the last 24 hours</description>
+        <query name="">SELECT count(*) as "requests" FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_10" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY) </query>
+        <visualization type="Value">
+            <unit>Requests</unit>
+        </visualization>
+    </measure>
+    <measure name="Requests to rate a dish" tags="" type="success">
+        <description>Requests of the last 24 hours.</description>
+        <query name="">SELECT count(*) as "requests" FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_4" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY) </query>
+        <visualization type="Value">
+            <unit>added ratings</unit>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Does mensa provide the precise information you need?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.C.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Does mensa provide the precise information you need?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Does mensa provide the precise information you need?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Does the information content meet your needs?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.C.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Does the information content meet your needs?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Does the information content meet your needs?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Does mensa provide reports that seem to be just about exactly what you need?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.C.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Does mensa provide reports that seem to be just about exactly what you need?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Does mensa provide reports that seem to be just about exactly what you need?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Does mensa provide sufficient information?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.C.4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Does mensa provide sufficient information?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Does mensa provide sufficient information?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Do you find the output relevant?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.C.5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Do you find the output relevant?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Do you find the output relevant?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Is mensa accurate?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.A.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Is mensa accurate?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Is mensa accurate?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Are you satisfied with the accuracy of mensa?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.A.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Are you satisfied with the accuracy of mensa?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Are you satisfied with the accuracy of mensa?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Do you feel the output of mensa is reliable?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.A.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Do you feel the output of mensa is reliable?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Do you feel the output of mensa is reliable?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Do you feel mensa is dependable?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.A.4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Do you feel mensa is dependable?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Do you feel mensa is dependable?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Do you think the output of mensa is presented in a useful format?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.F.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Do you think the output of mensa is presented in a useful format?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Do you think the output of mensa is presented in a useful format?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Is the information clear?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.F.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Is the information clear?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Is the information clear?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Are you happy with the layout of the output?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.F.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Are you happy with the layout of the output?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Are you happy with the layout of the output?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Is the output easy to understand?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.F.4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Is the output easy to understand?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Is the output easy to understand?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Is mensa user friendly?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.E.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Is mensa user friendly?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Is mensa user friendly?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Is mensa easy to use?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.E.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Is mensa easy to use?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Is mensa easy to use?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Is mensa efficient?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.E.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Is mensa efficient?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Is mensa efficient?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Do you get the information you need in time?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.T.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Do you get the information you need in time?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Do you get the information you need in time?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="End User Computing Satisfaction (EUCS): Does mensa provide up-to-date information?" tags="surveyId=56;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='56' AND qkey = "EUCS.T.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>End User Computing Satisfaction (EUCS): Does mensa provide up-to-date information?</nodeId>
+            <title>End User Computing Satisfaction (EUCS): Does mensa provide up-to-date information?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Requests of the rating of a dish " tags="" type="success">
+        <description>Requests of the last 24 hours to see the rating of a dish.</description>
+        <query name="">SELECT count(*) as "requests" FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_3" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY) </query>
+        <visualization type="Value">
+            <unit>Requests</unit>
+        </visualization>
+    </measure>
+    <measure name="Menu requests of the last 24 hours" tags="" type="success">
+        <description>Menu requests of the last 24 hours</description>
+        <query name="">SELECT count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY) </query>
+        <visualization type="Value">
+            <unit>Requests</unit>
+        </visualization>
+    </measure>
+    <measure name="Number of Users" tags="" type="success">
+        <description/>
+        <query name="">SELECT count(distinct REMARKS-&gt;&gt;"$.email") as user FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_41" and timediff(current_time(),TIME(TIME_STAMP))&lt;'24:00:00'</query>
+        <visualization type="Value">
+            <unit>User(s)</unit>
+        </visualization>
+    </measure>
+    <measure name="Number of Users in the last 24 hours" tags="" type="success">
+        <description/>
+        <query name="">SELECT count(distinct REMARKS-&gt;&gt;"$.email") as user FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_41" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY)</query>
+        <visualization type="Value">
+            <unit>User(s)</unit>
+        </visualization>
+    </measure>
+    <measure name="Number of users over the last 7 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE(TIME_STAMP) as date, count(distinct JSON_EXTRACT(REMARKS,"$.email")) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_41" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 WEEK) GROUP BY date</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Most visited canteens" tags="" type="success">
+        <description/>
+        <query name="">SELECT JSON_EXTRACT(REMARKS,"$.mensaName") as mensa, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND JSON_EXTRACT(REMARKS,"$.mensaName") IS NOT NULL GROUP BY JSON_EXTRACT(REMARKS,"$.mensaName")</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa (de): Wussten Sie, dass es einen Chatbot namens &quot;MensaBot&quot; gibt, mit dem man Informationen über die Mensa erhalten kann?" tags="surveyId=17;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Ja',  'Nein') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='17' AND qkey = "MENSA.4.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa (de): Wussten Sie, dass es einen Chatbot namens "MensaBot" gibt, mit dem man Informationen über die Mensa erhalten kann?</nodeId>
+            <title>Mensa (de): Wussten Sie, dass es einen Chatbot namens "MensaBot" gibt, mit dem man Informationen über die Mensa erhalten kann?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Are you a student?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Yes',  'No') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.1.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa: Are you a student?</nodeId>
+            <title>Mensa: Are you a student?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Which one do you identify yourself?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Female',  'Male') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.1.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa: Which one do you identify yourself?</nodeId>
+            <title>Mensa: Which one do you identify yourself?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Are you a vegetarian (or vegan)?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Yes',  'No') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.1.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa: Are you a vegetarian (or vegan)?</nodeId>
+            <title>Mensa: Are you a vegetarian (or vegan)?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Have you used the Mensa during its to-go operation?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Yes',  'No') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.2.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa: Have you used the Mensa during its to-go operation?</nodeId>
+            <title>Mensa: Have you used the Mensa during its to-go operation?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: If yes, were you satisfied with Mensa food during its to-go operation?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.2.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa: If yes, were you satisfied with Mensa food during its to-go operation?</nodeId>
+            <title>Mensa: If yes, were you satisfied with Mensa food during its to-go operation?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Are you happy that you can eat inside the Mensa again? (3 means indifferent)" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.2.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa: Are you happy that you can eat inside the Mensa again? (3 means indifferent)</nodeId>
+            <title>Mensa: Are you happy that you can eat inside the Mensa again? (3 means indifferent)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Do you think the COVID-19 protocols are observed in the Mensa?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.2.4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa: Do you think the COVID-19 protocols are observed in the Mensa?</nodeId>
+            <title>Mensa: Do you think the COVID-19 protocols are observed in the Mensa?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: How satisfied are you with the Mensa food?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.3.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa: How satisfied are you with the Mensa food?</nodeId>
+            <title>Mensa: How satisfied are you with the Mensa food?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: How satisfied are you with the value for money of the food you buy from Mensa?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.3.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa: How satisfied are you with the value for money of the food you buy from Mensa?</nodeId>
+            <title>Mensa: How satisfied are you with the value for money of the food you buy from Mensa?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: How satisfied are you with the process of buying your food from Mensa? (e.g waiting time in the queue, payment options, staff behavior, ...)" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.3.3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Mensa: How satisfied are you with the process of buying your food from Mensa? (e.g waiting time in the queue, payment options, staff behavior, ...)</nodeId>
+            <title>Mensa: How satisfied are you with the process of buying your food from Mensa? (e.g waiting time in the queue, payment options, staff behavior, ...)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Did you know there is a chatbot that can be used to get information about Mensa called &quot;MensaBot&quot;?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Yes',  'No') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.4.1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa: Did you know there is a chatbot that can be used to get information about Mensa called "MensaBot"?</nodeId>
+            <title>Mensa: Did you know there is a chatbot that can be used to get information about Mensa called "MensaBot"?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Mensa: Are you willing to use MensaBot?" tags="surveyId=16;generated" type="success">
+        <description/>
+        <query name="Answer Distribution">SELECT if(qval, 'Yes',  'No') AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='16' AND qkey = "MENSA.4.2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>PieChart</chartType>
+            <nodeId>Mensa: Are you willing to use MensaBot?</nodeId>
+            <title>Mensa: Are you willing to use MensaBot?</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Test Measure" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %d %Y") as date, count(1) as "requests" FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND JSON_CONTAINS_PATH(REMARKS,'one', "$.mensaName") AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 7 DAY) group by date(date)</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Average processing time of the last 14 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 2 DAY)</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average processing time of the last 2 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 2 DAY)</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of a menu request" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 2 DAY) AND ((REMARKS-&gt;"$.url") = 'menu')</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of a menu request of the last 2 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 5 DAY) AND ((REMARKS-&gt;"$.url") = 'menu')</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time grouped by request " tags="" type="success">
+        <description/>
+        <query name="">SELECT REMARKS-&gt;"$.url" as url , AVG(REMARKS-&gt;"$.duration") as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND REMARKS-&gt;"$.duration"&lt;300 GROUP BY  REMARKS-&gt;"$.url" </query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Average process time of a menu request of the last 7 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 6 DAY) AND ((REMARKS-&gt;"$.url") = 'menu')</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of a menu request of the last 5 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT ROUND(AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000, 4) as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 5 DAY)  AND (((REMARKS-&gt;"$.url") = 'menu') OR ((REMARKS-&gt;"$.url") = 'menu/'))</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average processing time of the last 5 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT ROUND(AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000,4) as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 5 DAY) </query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of the last 24 hours" tags="" type="success">
+        <description/>
+        <query name="">SELECT ROUND(AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000, 4) as duration FROM LAS2PEERMON.MESSAGE WHERE (EVENT = 'SERVICE_CUSTOM_MESSAGE_40' OR EVENT = 'SERVICE_CUSTOM_MESSAGE_42') AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY) </query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Menu requestes of the last 2 month" tags="" type="success">
+        <description/>
+        <query name="">SELECT TIME_STAMP as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 2 MONTH) GROUP BY date ORDER BY TIME_STAMP ASC</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Menu request in every month of the last year " tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %Y") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 12 MONTH) GROUP BY date ORDER BY TIME_STAMP ASC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Favourite days of the last year" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%a") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 12 MONTH) GROUP BY date  ORDER BY requests DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Number of users of the last month" tags="" type="success">
+        <description/>
+        <query name="">SELECT COUNT(distinct(REMARKS-&gt;&gt;"$.email")) as user FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_41" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 MONTH) </query>
+        <visualization type="Value">
+            <unit>User</unit>
+        </visualization>
+    </measure>
+    <measure name="Users of the last month" tags="" type="success">
+        <description/>
+        <query name="">SELECT  (REMARKS-&gt;&gt;"$.email") as user, count(*) as requests FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_41" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 MONTH) GROUP BY user ORDER BY requests DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Total number of users" tags="" type="success">
+        <description/>
+        <query name="">SELECT  COUNT(distinct REMARKS-&gt;&gt;"$.email") as users FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_41"</query>
+        <visualization type="Value">
+            <unit>User</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of a menu request in the last 24 hours" tags="" type="success">
+        <description/>
+        <query name="">SELECT ROUND(AVG(JSON_EXTRACT(REMARKS,"$.duration"))/1000,4) as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_40' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY)  AND (((REMARKS-&gt;"$.url") = 'menu') OR ((REMARKS-&gt;"$.url") = 'menu/'))</query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Number of users of the last months" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %Y") AS date,        COUNT(DISTINCT REMARKS-&gt;&gt;"$.email") AS requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_41" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 12 MONTH) GROUP BY date ORDER BY MIN(TIME_STAMP);</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="SUS - System Usability Scale Global Score" tags="surveyId=44;generated" type="success">
+        <description/>
+        <query name="">SELECT AVG((SUS_1 - SUS_2 + SUS_3 - SUS_4 + SUS_5 - SUS_6 + SUS_7 - SUS_8 + SUS_9 - SUS_10 + 20) * 2.5 ) FROM(  SELECT uid, MAX(IF(qkey="SUS.1", qval, NULL)) AS SUS_1, MAX(IF(qkey="SUS.2", qval, NULL)) AS SUS_2, MAX(IF(qkey="SUS.3", qval, NULL)) AS SUS_3, MAX(IF(qkey="SUS.4", qval, NULL)) AS SUS_4, MAX(IF(qkey="SUS.5", qval, NULL)) AS SUS_5, MAX(IF(qkey="SUS.6", qval, NULL)) AS SUS_6, MAX(IF(qkey="SUS.7", qval, NULL)) AS SUS_7, MAX(IF(qkey="SUS.8", qval, NULL)) AS SUS_8, MAX(IF(qkey="SUS.9", qval, NULL)) AS SUS_9, MAX(IF(qkey="SUS.10", qval, NULL)) AS SUS_10  FROM mobsos.response WHERE sid='44' GROUP BY uid) t</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Menu requests in every month of the last year " tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %Y") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 12 MONTH) GROUP BY date ORDER BY date ASC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Menu requests of the last 2 month" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %d %Y") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 2 MONTH) GROUP BY date ORDER BY TIME_STAMP ASC</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Repeat visitors from this month" tags="" type="success">
+        <description/>
+        <query name="">SELECT distinct(REMARKS-&gt;&gt;"$.email") as user, count(*) as requests FROM MESSAGE where EVENT ="SERVICE_CUSTOM_MESSAGE_41" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 MONTH) GROUP BY user HAVING requests &gt; 1  ORDER BY requests DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Number of unsuccessful menu requests of the last week" tags="" type="success">
+        <description/>
+        <query name="">SELECT COUNT(*) FROM LAS2PEERMON.MESSAGE                    WHERE EVENT = 'SERVICE_CUSTOM_ERROR_2' AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 7 DAY)</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Average process time of not-service-related answers" tags="" type="success">
+        <description/>
+        <query name="">SELECT ROUND(AVG(JSON_EXTRACT(REMARKS,"$.time"))/1000,4) as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_42' </query>
+        <visualization type="Value">
+            <unit>s</unit>
+        </visualization>
+    </measure>
+    <measure name="Personalization of the MensaBot: Assign a value between 1 and 5" tags="surveyId=70;generated" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='70' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Personalization of the MensaBot: Assign a value between 1 and 5</nodeId>
+            <title>Personalization of the MensaBot: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Personalization of the MensaBot Global Score" tags="surveyId=72;generated" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: score">SELECT AVG(((q0-1)+(5-q1)+(q2-1)+(5-q3))*2.5) FROM(  SELECT uid, MAX(IF(qkey="q0", qval, NULL)) AS q0, MAX(IF(qkey="q1", qval, NULL)) AS q1, MAX(IF(qkey="q2", qval, NULL)) AS q2, MAX(IF(qkey="q3", qval, NULL)) AS q3  FROM mobsos.response WHERE sid='72' GROUP BY uid) t</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Personalization of the MensaBot: q0: Assign a value between 1 and 5" tags="surveyId=72;generated" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q0">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q0" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Personalization of the MensaBot: q0: Assign a value between 1 and 5</nodeId>
+            <title>Personalization of the MensaBot: q0: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Personalization of the MensaBot: q1: Assign a value between 1 and 5" tags="surveyId=72;generated" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Personalization of the MensaBot: q1: Assign a value between 1 and 5</nodeId>
+            <title>Personalization of the MensaBot: q1: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Personalization of the MensaBot: q2: Assign a value between 1 and 5" tags="surveyId=72;generated" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Personalization of the MensaBot: q2: Assign a value between 1 and 5</nodeId>
+            <title>Personalization of the MensaBot: q2: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Personalization of the MensaBot: q3: Assign a value between 1 and 5" tags="surveyId=72;generated" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Personalization of the MensaBot: q3: Assign a value between 1 and 5</nodeId>
+            <title>Personalization of the MensaBot: q3: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q1: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q1: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q1: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q2: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q2: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q2: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q3: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q3: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q3: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q4: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q4">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q4: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q4: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q5: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q5">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q5: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q5: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q6: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q6">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q6" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q6: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q6: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q7: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q7">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q7" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q7: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q7: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information: q8: Assign a value between 1 and 5" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q8">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q8" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Perceived quality and usefulness of the MensaBots information: q8: Assign a value between 1 and 5</nodeId>
+            <title>Perceived quality and usefulness of the MensaBots information: q8: Assign a value between 1 and 5</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Perceived quality and usefulness of the MensaBots information Global Score" tags="surveyId=73;generated" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: score">SELECT AVG(((q1-1)+(5-q2)+(q3-1)+(5-q4)+(q5-1)+(5-q6)+(q7-1)+(5-q8))*2.5) FROM(  SELECT uid, MAX(IF(qkey="q1", qval, NULL)) AS q1, MAX(IF(qkey="q2", qval, NULL)) AS q2, MAX(IF(qkey="q3", qval, NULL)) AS q3, MAX(IF(qkey="q4", qval, NULL)) AS q4, MAX(IF(qkey="q5", qval, NULL)) AS q5, MAX(IF(qkey="q6", qval, NULL)) AS q6, MAX(IF(qkey="q7", qval, NULL)) AS q7, MAX(IF(qkey="q8", qval, NULL)) AS q8  FROM mobsos.response WHERE sid='73' GROUP BY uid) t</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q1: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q1: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q1: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q2: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q2: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q2: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q3: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q3: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q3: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q4: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q4">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q4: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q4: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q5: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q5">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q5: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q5: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q6: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q6">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q6" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q6: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q6: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q7: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q7">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q7" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q7: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q7: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot : q8: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete." tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q8">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q8" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>Time savings due to the MensaBot : q8: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</nodeId>
+            <title>Time savings due to the MensaBot : q8: To evaluate the personalization of MensaBot, please fill out the following questionnaire. It will take about 5 minutes to complete.</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="Time savings due to the MensaBot  Global Score" tags="surveyId=74;generated" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : score">SELECT AVG(((q1-1)+(5-q2)+(q3-1)+(5-q4)+(q5-1)+(5-q6)+(q7-1)+(5-q8))*2.5) FROM(  SELECT uid, MAX(IF(qkey="q1", qval, NULL)) AS q1, MAX(IF(qkey="q2", qval, NULL)) AS q2, MAX(IF(qkey="q3", qval, NULL)) AS q3, MAX(IF(qkey="q4", qval, NULL)) AS q4, MAX(IF(qkey="q5", qval, NULL)) AS q5, MAX(IF(qkey="q6", qval, NULL)) AS q6, MAX(IF(qkey="q7", qval, NULL)) AS q7, MAX(IF(qkey="q8", qval, NULL)) AS q8  FROM mobsos.response WHERE sid='74' GROUP BY uid) t</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q1: I think that I would like to use MensaBot frequently. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q1: I think that I would like to use MensaBot frequently. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q1: I think that I would like to use MensaBot frequently. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q2: I found the MensaBot unnecessarily complex. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q2: I found the MensaBot unnecessarily complex. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q2: I found the MensaBot unnecessarily complex. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q3: I thought the MensaBot was easy to use. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q3: I thought the MensaBot was easy to use. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q3: I thought the MensaBot was easy to use. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q4: I think that I would need the support of a technical person to be able to use the MensaBot. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q4">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q4: I think that I would need the support of a technical person to be able to use the MensaBot. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q4: I think that I would need the support of a technical person to be able to use the MensaBot. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q5: I found the various functions in the MensaBot were well integrated. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q5">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q5: I found the various functions in the MensaBot were well integrated. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q5: I found the various functions in the MensaBot were well integrated. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q6: I thought there was too much inconsistency in the MensaBot. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q6">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q6" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q6: I thought there was too much inconsistency in the MensaBot. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q6: I thought there was too much inconsistency in the MensaBot. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q7: I would imagine that most people would learn to use the MensaBot very quickly. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q7">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q7" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q7: I would imagine that most people would learn to use the MensaBot very quickly. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q7: I would imagine that most people would learn to use the MensaBot very quickly. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q8: I found the MensaBot very awkward to use. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q8">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q8" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q8: I found the MensaBot very awkward to use. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q8: I found the MensaBot very awkward to use. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q9: I felt very confident using the MensaBot. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q9">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q9" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q9: I felt very confident using the MensaBot. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q9: I felt very confident using the MensaBot. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot: q10: I needed to learn a lot of things before I could get going with the MensaBot. (1: strongly disagree - 5: strongly agree)" tags="surveyId=75;generated" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: q10">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='75' AND qkey = "q10" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>System Usabilty Scale of the MensaBot: q10: I needed to learn a lot of things before I could get going with the MensaBot. (1: strongly disagree - 5: strongly agree)</nodeId>
+            <title>System Usabilty Scale of the MensaBot: q10: I needed to learn a lot of things before I could get going with the MensaBot. (1: strongly disagree - 5: strongly agree)</title>
+            <height>300px</height>
+            <width>300px</width>
+        </visualization>
+    </measure>
+    <measure name="System Usabilty Scale of the MensaBot Global Score" tags="" type="success">
+        <description/>
+        <query name="System Usabilty Scale of the MensaBot: score">SELECT ROUND(AVG(((q1-1)+(5-q2)+(q3-1)+(5-q4)+(q5-1)+(5-q6)+(q7-1)+(5-q8)+(q9-1)+(5-q10))*2.5),2) FROM(  SELECT uid, MAX(IF(qkey="q1", qval, NULL)) AS q1, MAX(IF(qkey="q2", qval, NULL)) AS q2, MAX(IF(qkey="q3", qval, NULL)) AS q3, MAX(IF(qkey="q4", qval, NULL)) AS q4, MAX(IF(qkey="q5", qval, NULL)) AS q5, MAX(IF(qkey="q6", qval, NULL)) AS q6, MAX(IF(qkey="q7", qval, NULL)) AS q7, MAX(IF(qkey="q8", qval, NULL)) AS q8, MAX(IF(qkey="q9", qval, NULL)) AS q9, MAX(IF(qkey="q10", qval, NULL)) AS q10  FROM mobsos.response WHERE sid='75' GROUP BY uid) t</query>
+        <visualization type="Value">
+            <unit/>
+        </visualization>
+    </measure>
+    <measure name=" q1 - The information received is up to date" tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="The information is outdated." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q2 - The information is outdated." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name=" q0 - I can customize the bot to my needs." tags="" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q0">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q0" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name=" q1 - The bot lacks the possibility for proper personalization." tags="" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q1 - By using the bot, I get information quickly." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q1">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q1" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q2 - It takes a long time to get the information I need through the bot." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q3 - Compared to the alternatives I know; the bot is faster than them." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q4 - Using the bot takes longer than my previous approach." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q4">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q5 - With regular use of the bot, I would save time compared to now. " tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q5">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q6 - Using the bot does not save me any time or even makes it take longer." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q6">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q6" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q7 - The bot answers quickly." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q7">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q7" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q8 - The bot takes a long time to give me an adequate answer." tags="" type="success">
+        <description/>
+        <query name="Time savings due to the MensaBot : q8">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='74' AND qkey = "q8" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q3 - The opportunity for personalization is still not satisfied." tags="" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q2 - I think the options for personalization are enough." tags="" type="success">
+        <description/>
+        <query name="Personalization of the MensaBot: q2">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='72' AND qkey = "q2" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q3 - The information received is reliable." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q3">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q3" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q4 - The information is useless or unreliable." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q4">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q4" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q5 - I receive appropriate information for my request." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q5">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q5" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q6 - The information received does not meet my requirements." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q6">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q6" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name=" q7 - I knew immediately what information the chatbot provides." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q7">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q7" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="q8 - I have not intuitively understood what information I can get from the bot." tags="" type="success">
+        <description/>
+        <query name="Perceived quality and usefulness of the MensaBots information: q8">SELECT qval AS Answer, COUNT(*) as number FROM mobsos.response WHERE sid='73' AND qkey = "q8" GROUP BY Answer ORDER BY number DESC</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Favorite hour of the last year" tags="" type="success">
+        <description/>
+        <query name="">SELECT </query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Favourite hours of the last year" tags="" type="success">
+        <description/>
+        <query name="">SELECT CONCAT(        LPAD(DATE_FORMAT(TIME_STAMP, "%H"), 2, '0'),        ':00-',         LPAD(DATE_FORMAT(TIME_STAMP + INTERVAL 1 HOUR, "%H"), 2, '0'),        ':00'    ) as time_range,    COUNT(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_1"    AND TIME_STAMP &gt; (DATE_SUB('2023-08-07', INTERVAL 12 MONTH))GROUP BY time_range ORDER BY time_range ASC;</query>
+        <visualization type="Chart">
+            <chartType>BarChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Recommondations requests of the last 7 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %d %Y") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_51" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 7 DAY) GROUP BY date ORDER BY TIME_STAMP ASC</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Keyword search requests of the last 7 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %d %Y") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_51" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 7 DAY) AND (JSON_EXTRACT(REMARKS,"$.Task") LIKE 'Keyword Search%') GROUP BY date ORDER BY TIME_STAMP ASC</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Recommendation Search requests of the last 7 days" tags="" type="success">
+        <description/>
+        <query name="">SELECT DATE_FORMAT(TIME_STAMP, "%M %d %Y") as date, count(*) as requests FROM MESSAGE WHERE EVENT = "SERVICE_CUSTOM_MESSAGE_51" AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 7 DAY) AND (JSON_EXTRACT(REMARKS,"$.Task") LIKE 'Recommendation Search%') GROUP BY date ORDER BY TIME_STAMP ASC</query>
+        <visualization type="Chart">
+            <chartType>LineChart</chartType>
+            <nodeId>undefined</nodeId>
+            <title>undefined</title>
+            <height>undefined</height>
+            <width>undefined</width>
+        </visualization>
+    </measure>
+    <measure name="Average process time of not-service-related answers of the CitationBot" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.Process time"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE EVENT = 'SERVICE_CUSTOM_MESSAGE_50'</query>
+        <visualization type="Value">
+            <unit>seconds</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of the last 24 hours  of the CitationBot" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.Process time"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE (EVENT = 'SERVICE_CUSTOM_MESSAGE_50' OR EVENT = 'SERVICE_CUSTOM_MESSAGE_51' OR EVENT = 'SERVICE_CUSTOM_MESSAGE_52') AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY)</query>
+        <visualization type="Value">
+            <unit>seconds</unit>
+        </visualization>
+    </measure>
+    <measure name="Average process time of service requests of the last 24 hours  of the CitationBot" tags="" type="success">
+        <description/>
+        <query name="">SELECT AVG(JSON_EXTRACT(REMARKS,"$.Process time"))/1000 as duration FROM LAS2PEERMON.MESSAGE WHERE (EVENT = 'SERVICE_CUSTOM_MESSAGE_51' OR EVENT = 'SERVICE_CUSTOM_MESSAGE_52') AND TIME_STAMP &gt; ('2022-06-07' - INTERVAL 1 DAY)</query>
+        <visualization type="Value">
+            <unit>seconds</unit>
+        </visualization>
+    </measure>
+</Catalog>
