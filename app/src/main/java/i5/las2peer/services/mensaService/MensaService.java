@@ -896,6 +896,7 @@ public class MensaService extends RESTService {
         context.remove("selected_stars");
         context.remove("selected_mensa");
         context.remove("selected_dish");
+        chatResponse.put("closeContext", true);
         Number start = context.getAsNumber("review_start");
         if (start != null) {
           event.put("time", System.currentTimeMillis() - start.longValue());
